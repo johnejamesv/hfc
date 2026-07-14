@@ -9,5 +9,6 @@ describe("Home", () => {
     expect(screen.getByRole("heading", { name: "Find a matching pair" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start listening" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Editor controls" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Voice transcript status" })).toHaveTextContent("idle");
   });
 });

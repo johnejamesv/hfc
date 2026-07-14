@@ -145,6 +145,24 @@ This integration is the highest-risk technical dependency and must be tested on 
 - Show an "I didn't understand" state for unknown input.
 - The command router and Python normalizer must be pure functions with unit tests.
 
+For routing only, trim surrounding whitespace, collapse internal whitespace runs, compare
+case-insensitively, and ignore trailing `.`, `,`, `!`, or `?` characters. Keep the untouched
+transcript for display. Command grammar remains exact after that normalization: added words
+or unsupported synonyms produce `unknown`. `N` and `M` are positive base-10 integers written
+with digits; spoken number words are outside the initial grammar.
+
+Line numbers spoken in deterministic commands are one-based. "Go to line N" creates a
+collapsed selection at the beginning of that line. "Select line N" selects that line's
+content, excluding its line separator. "Select lines N through M" selects from the beginning
+of line N through the end of line M, also excluding the final line separator. The endpoints
+are inclusive and `N` must be less than or equal to `M`. Zero, negative, reversed, or
+beyond-end ranges are invalid and must leave both source and selection unchanged.
+
+"New line" replaces the current selection with a line separator followed by the leading
+whitespace of the line containing the selection head. It does not add an extra indentation
+level; the explicit Indent action does that. Python indentation is four spaces for all
+deterministic actions and literal-dictation fixtures in this proof of concept.
+
 ### OpenAI integration
 
 - Keep `OPENAI_API_KEY` server-side.
@@ -179,6 +197,146 @@ This integration is the highest-risk technical dependency and must be tested on 
 - Respect safe-area insets on iPhones.
 - Do not rely on hover interactions.
 - Keep the normal software keyboard usable as a fallback when the user taps the editor.
+
+## Normative behavioral and test contracts
+
+These contracts define observable behavior, not internal module structure. Automated tests
+may use fakes for browser APIs, workers, Pyodide, and OpenAI, but assertions should be made at
+the narrowest public boundary that proves each behavior.
+
+### Realtime client lifecycle
+
+The minimal client lifecycle is `idle -> connecting -> listening -> disconnecting -> idle`,
+with `error` as a recoverable state. The following rules are normative:
+
+- Connect is accepted only from `idle` or `error`. A repeated Connect while connecting or
+  listening is a no-op and cannot request another credential, peer connection, or microphone
+  stream.
+- Disconnect is safe from every state. Repeated Disconnect is a no-op after resources have
+  been released.
+- Disconnect while Connect is pending invalidates that attempt. A late credential,
+  permission, or negotiation result cannot transition the client to listening.
+- Credential, permission, and negotiation failures release every resource acquired by that
+  attempt, enter `error`, and expose an actionable message. A later Connect may retry.
+- Disconnect stops every microphone track and closes the data channel and peer connection.
+  No completed transcript callback may fire after Disconnect has completed.
+- Only completed transcript items are emitted. A provider item identifier is emitted at most
+  once even if the underlying event is delivered repeatedly.
+
+### Editor actions and pending proposals
+
+Ranges use zero-based, half-open document offsets even though spoken line numbers are
+one-based. A range is valid only when `0 <= from <= to <= source.length`. Invalid action
+ranges produce an error and do not change source, selection, pending proposal, or undo
+history.
+
+At minimum, action tests must prove these examples:
+
+| Action | Initial state | Expected observable result |
+| --- | --- | --- |
+| Insert `X` at `[1, 1)` | source `abc` | source `aXbc`; cursor after `X`; one Undo restores `abc` |
+| Replace `[1, 2)` with `X` | source `abc` | source `aXc`; replacement is one undoable transaction |
+| Select `[0, 2)` | source `abc` | source unchanged; selection is `[0, 2)`; undo history unchanged |
+| Delete selection `[1, 2)` | source `abc` | source `ac`; cursor at offset 1; one Undo restores `abc` |
+| Indent at cursor 3 | source `  x` | source `      x`; cursor at offset 7; one Undo restores source and cursor |
+| Outdent at cursor 7 | source `      x` | source `  x`; cursor at offset 3; one Undo restores source and cursor |
+| Apply proposal `[1, 2) -> X` | source `abc`, matching captured source | source `aXc`; proposal cleared; one Undo restores `abc` exactly |
+| Discard proposal | any unchanged live source | source unchanged; proposal cleared; undo history unchanged |
+| Apply proposal after source changes | live source differs from captured source | visible stale-proposal error; source and proposal unchanged |
+| Any action with `from > to` or an endpoint outside the document | any state | visible invalid-range error; all editor state unchanged |
+
+A collapsed Indent or Outdent action changes the leading whitespace of the current line. A
+non-collapsed action changes every line touched by the selection in one transaction. Indent
+adds four spaces. Outdent removes up to four leading spaces and never removes non-whitespace.
+Undo restores both source and selection, and Redo reapplies both. Run emits one run request
+without changing source, selection, pending proposal, or editor history.
+
+A proposal captures the complete source and replacement range used to request it. Apply is
+allowed only while the current source exactly equals that captured source. Moving the
+selection alone does not make a proposal stale. Apply replaces only the captured half-open
+range. Discard never changes the document. Reset cancellation changes neither document nor
+history; confirmed Reset restores starter source and clears pending proposals.
+
+Challenge edits are retained per challenge in memory as soon as T-003 is implemented.
+T-010 extends that behavior across reloads using versioned local storage.
+
+### Literal Python dictation
+
+Known spoken phrases are matched case-insensitively using longest-token-first matching, so
+"less than or equal" is one token rather than `less than` followed by unknown words. Unknown
+words remain in their original order and spelling after the leading `type` cue is removed.
+Known `True`, `False`, and `None` tokens use Python casing.
+
+The documented tokens have these literal meanings:
+
+| Class | Spoken token | Emitted token |
+| --- | --- | --- |
+| punctuation | `colon`, `comma`, `dot` | `:`, `,`, `.` |
+| punctuation | `open paren`, `close paren` | `(`, `)` |
+| punctuation | `open bracket`, `close bracket` | `[`, `]` |
+| punctuation | `open brace`, `close brace` | `{`, `}` |
+| operator | `equals`, `double equals`, `not equals` | `=`, `==`, `!=` |
+| operator | `less than`, `greater than` | `<`, `>` |
+| operator | `less than or equal`, `greater than or equal` | `<=`, `>=` |
+| operator | `plus`, `minus`, `times`, `divided by`, `modulo` | `+`, `-`, `*`, `/`, `%` |
+| Python | `def`, `return`, `for`, `while`, `if`, `elif`, `else`, `in` | the same lowercase keyword |
+| Python | `range`, `enumerate` | the same lowercase identifier |
+| Python | `true`, `false`, `none` | `True`, `False`, `None` |
+| layout | `new line`, `indent`, `dedent` | layout behavior described below; no literal word |
+
+The normalizer uses conventional Python spacing: binary operators have one space on either
+side; commas have no preceding space and one following space; colons and closing delimiters
+have no preceding space; opening delimiters and dots have no following space; and a function
+call has no space before its opening parenthesis. Layout tokens are not emitted as words.
+`new line` emits a line separator, `indent` increases subsequent line indentation by four
+spaces, and `dedent` reduces it by four spaces without going below the indentation active at
+the insertion context.
+
+The following fixtures are normative; expected strings are exact:
+
+| Spoken text after `type` | Normalized Python |
+| --- | --- |
+| `return nums open bracket 0 close bracket` | `return nums[0]` |
+| `if left less than or equal right colon` | `if left <= right:` |
+| `result equals pair_sum open paren nums comma target close paren` | `result = pair_sum(nums, target)` |
+| `for item in nums colon new line indent return item` | `for item in nums:\n    return item` |
+| `if value double equals None colon new line indent return False new line dedent return True` | `if value == None:\n    return False\nreturn True` |
+
+When inserted into an already-indented context, each emitted line begins at that context's
+indentation, and spoken Indent or Dedent changes indentation relative to that baseline. The
+entire normalized insertion is one undoable transaction.
+
+### Python worker protocol and recovery
+
+Every run has a request identifier, and every worker response includes that identifier.
+Results distinguish these outcomes:
+
+- `completed`: captured standard output, no runner exception, and a named list of individual
+  tests whose status is `passed` or `failed`; an assertion failure is a failed test rather
+  than a runner exception;
+- `error`: captured output plus a structured exception containing at least its Python type
+  and message; syntax errors and runtime failures outside an individual assertion use this
+  outcome;
+- `timeout`: the three-second limit elapsed, the old worker was terminated, and a replacement
+  worker began its normal loading-to-ready lifecycle.
+
+The UI ignores responses whose request identifier is not the currently active run, including
+late responses from a timed-out or replaced worker. A run made after replacement reaches
+ready must be able to complete normally. Worker tests use a passing solution, an assertion-
+failing solution, a solution that prints, a syntax or runtime error, and an infinite loop.
+
+### Completed-turn serialization
+
+A completed transcript turn has a stable identifier. The application records that identifier
+before routing it and never routes the same identifier again, whether the duplicate arrives
+before, during, or after handling of the original.
+
+Only one turn mutates application state at a time. Additional completed turns received while
+an edit is being applied or tests are running are queued once in arrival order and handled
+after the active operation completes, provided the voice session is still active. A Stop turn
+or microphone-button stop takes priority: it ends the session, releases microphone resources,
+clears queued turns, and prevents those turns from causing later mutations. After a non-Stop
+turn finishes and the session remains active, the UI returns to listening.
 
 ## Suggested technical architecture
 

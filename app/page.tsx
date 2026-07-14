@@ -1,3 +1,5 @@
+import { VoiceSession } from "./voice-session";
+
 const starterCode = `def pair_sum(nums, target):
     # Your solution goes here
     return []`;
@@ -39,27 +41,7 @@ export default function Home() {
         </pre>
       </section>
 
-      <section className="transcript" aria-live="polite" aria-label="Voice transcript status">
-        <span className="pulse" aria-hidden="true" />
-        <div>
-          <p className="eyebrow">Voice session</p>
-          <p>Tap the microphone when you’re ready to code.</p>
-        </div>
-      </section>
-
-      <nav className="control-dock" aria-label="Editor controls">
-        <button type="button" className="dock-button" aria-label="Undo" disabled>
-          <span aria-hidden="true">↶</span>
-          Undo
-        </button>
-        <button type="button" className="microphone-button" aria-label="Start listening">
-          <span aria-hidden="true">●</span>
-        </button>
-        <button type="button" className="dock-button">
-          <span aria-hidden="true">▶</span>
-          Run
-        </button>
-      </nav>
+      <VoiceSession />
     </main>
   );
 }

@@ -1,0 +1,1 @@
+study specs.md, complete the most important item on the list. don't assume each item is fully complete. validate when done and then commit. write any hiccups or anything that the next agent might need to agents.md

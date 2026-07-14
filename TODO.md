@@ -36,10 +36,10 @@ also verifies the primary shell controls and absence of horizontal page scrollin
 
 ### T-002 — Prove microphone transcription on the target iPhone
 
-- [ ] Add a server-only endpoint that creates short-lived OpenAI Realtime credentials.
-- [ ] Add a minimal WebRTC transcription client with explicit connect/disconnect state.
-- [ ] Show completed transcript turns on screen.
-- [ ] Confirm permanent API credentials are absent from client bundles and browser storage.
+- [x] Add a server-only endpoint that creates short-lived OpenAI Realtime credentials.
+- [x] Add a minimal WebRTC transcription client with explicit connect/disconnect state.
+- [x] Show completed transcript turns on screen.
+- [x] Confirm permanent API credentials are absent from client bundles and browser storage.
 - [ ] Document the physical-iPhone result and any Safari-specific constraint.
 - [ ] If the four-hour Realtime spike fails, implement and document the one-utterance `MediaRecorder` fallback behind the same transcript callback.
 
@@ -48,11 +48,16 @@ Acceptance:
 - A spoken phrase appears as a completed transcript on the physical iPhone, or the documented fallback does so.
 - Starting and stopping twice does not create duplicate active microphone sessions.
 - Missing credentials produce a safe, actionable error.
-- Realtime client state transitions have automated coverage where browser APIs can be mocked.
+- Realtime client state transitions follow the normative lifecycle in `SPEC.md` and have
+  automated coverage where browser APIs can be mocked, including repeated Connect,
+  repeated Disconnect, failure cleanup, and Disconnect while Connect is pending.
 
 Prerequisites: T-001.
 
-Evidence: pending.
+Evidence: The app uses the GA client-secret and browser-WebRTC flow, with the permanent
+credential read only by `app/api/realtime-token/route.ts`. Unit coverage proves repeated
+Connect and Disconnect safety, pending-connect invalidation, failure cleanup, and completed
+turn de-duplication. Physical-iPhone validation remains pending; see `agents.md`.
 
 ### T-003 — Build the challenge and editor shell
 
@@ -64,8 +69,10 @@ Evidence: pending.
 
 Acceptance:
 
-- Switching challenges displays the correct prompt and starter source.
-- Reset cannot erase work without confirmation.
+- Switching challenges displays the correct prompt and restores that challenge's current
+  in-memory source; persistence across reloads remains T-010 scope.
+- Canceling Reset leaves source and history unchanged; confirming Reset restores the
+  bundled starter source.
 - The editor works with touch and the normal iOS keyboard.
 - Component tests cover challenge switching and reset behavior.
 
@@ -85,7 +92,10 @@ Acceptance:
 
 - The action layer is independent of microphone and OpenAI code.
 - Applying and undoing a proposed replacement restores the exact original source.
-- Unit tests cover valid actions, invalid ranges, Apply, Discard, and Undo.
+- Unit tests cover the normative action examples in `SPEC.md`, including resulting source,
+  selection, pending proposal, error, and undo behavior where applicable.
+- A proposal captured against stale source cannot be applied and leaves both the live
+  source and pending proposal unchanged.
 
 Prerequisites: T-003.
 
@@ -104,7 +114,9 @@ Acceptance:
 - The demo challenge has observable failing and passing solutions.
 - An infinite loop times out without freezing the page.
 - A subsequent run succeeds after a timeout recreates the worker.
-- Worker messaging and result presentation have automated tests.
+- Worker messaging and result presentation follow the normative result contract in
+  `SPEC.md`; automated tests cover pass, assertion failure, captured output, syntax or
+  runtime error, timeout, late messages from a terminated worker, and recovery.
 
 Prerequisites: T-003.
 
@@ -124,6 +136,10 @@ Acceptance:
 - Similar but unsupported phrases return `unknown` and do not mutate source.
 - Out-of-bounds selections produce a visible error and no mutation.
 - No generative model is called for recognized deterministic commands.
+- Tests use the one-based line and selection semantics defined in `SPEC.md`, including
+  first-line, last-line, reversed-range, and beyond-end cases.
+- Router fixtures cover case, repeated whitespace, allowed terminal punctuation, and added
+  or unsupported words that must remain `unknown`.
 
 Prerequisites: T-002 and T-004.
 
@@ -140,6 +156,8 @@ Evidence: pending.
 Acceptance:
 
 - Unit fixtures cover every documented token and representative multi-line snippets.
+- The normative dictation fixtures in `SPEC.md` pass exactly, including whitespace and
+  indentation.
 - Unknown words are preserved rather than silently discarded.
 - Literal dictation never calls the AI edit endpoint.
 - Each utterance can be undone in one operation.
@@ -161,6 +179,8 @@ Acceptance:
 
 - A `change` request with no selection is rejected client-side without an API call.
 - A valid proposal cannot alter content outside its captured range.
+- A proposal is rejected as stale if the live source differs from the source against which
+  it was captured; rejection does not mutate source or silently discard the proposal.
 - Malformed model output produces an error and leaves source unchanged.
 - Apply and Discard work without an API key when the mock adapter is enabled.
 - Server tests prove the permanent API key is never serialized to the client.
@@ -182,7 +202,11 @@ Acceptance:
 - Button and voice paths produce equivalent state transitions in tests.
 - The rehearsed flow can be completed without touching the software keyboard after listening starts.
 - Repeated transcript events do not duplicate an edit or test run.
+- Completed turns are deduplicated and serialized according to the normative queue rules in
+  `SPEC.md`; tests cover duplicates received both before and after the original turn runs.
 - Stopping releases microphone tracks and returns the UI to idle.
+- Stop takes priority over queued turns and prevents queued mutations from running after the
+  session is stopped.
 
 Prerequisites: T-002, T-005, T-006, T-007, and T-008.
 
@@ -201,9 +225,12 @@ Evidence: pending.
 Acceptance:
 
 - Reloading restores each challenge's latest source.
-- Corrupt storage falls back to starter content without crashing.
+- Malformed JSON, wrong field types, an unsupported schema version, and an unknown selected
+  challenge all fall back safely without crashing or contaminating valid challenge data.
 - The app is installable from Safari and remains usable in standalone mode.
-- Persistence and manifest behavior have automated coverage where practical.
+- Automated tests cover per-challenge round trips and each invalid-storage case. Manifest
+  tests verify name, short name, start URL, standalone display, theme metadata, and required
+  icon declarations; physical installation and standalone layout remain manual checks.
 
 Prerequisites: T-003 and T-004.
 
@@ -212,7 +239,8 @@ Evidence: pending.
 ### T-011 — Harden and verify the complete demo flow
 
 - [ ] Add an e2e test for challenge selection, deterministic editing, AI proposal review, Apply, and test execution using mocked OpenAI responses.
-- [ ] Add failure-path coverage for denied microphone permission, network failure, malformed AI output, and Python timeout.
+- [ ] Add failure-path coverage for denied microphone permission, Realtime credential or
+      negotiation failure, AI request failure, malformed AI output, and Python timeout.
 - [ ] Verify responsive behavior with Playwright WebKit at the target viewport.
 - [ ] Run the rehearsed flow repeatedly on the physical iPhone.
 - [ ] Record the final device, iOS version, browser, model configuration, and known limitations.
