@@ -1,0 +1,247 @@
+:root {
+  color-scheme: dark;
+  --background: #07110f;
+  --surface: #10201c;
+  --surface-raised: #172b26;
+  --line: #29423b;
+  --text: #f1f7f4;
+  --muted: #9eb3ac;
+  --accent: #6fffc1;
+  --accent-ink: #062117;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--background);
+}
+
+body {
+  color: var(--text);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(100%, 48rem);
+  min-height: 100svh;
+  margin: 0 auto;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem calc(7rem + env(safe-area-inset-bottom));
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 90% 0%, rgb(111 255 193 / 10%), transparent 18rem),
+    var(--background);
+}
+
+.topbar,
+.panel-heading,
+.control-dock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbar {
+  margin-bottom: 1.1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.brand-mark {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 0.55rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.session-state,
+.language-badge {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.challenge-card,
+.editor-panel,
+.transcript {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: rgb(16 32 28 / 92%);
+}
+
+.challenge-card {
+  padding: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.3rem;
+  color: var(--accent);
+  font-size: 0.69rem;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  overflow-wrap: anywhere;
+}
+
+h1 {
+  margin: 0 0 0.55rem;
+  font-size: clamp(1.35rem, 6vw, 1.8rem);
+  letter-spacing: -0.035em;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.challenge-card > p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.example {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.85rem;
+  border-left: 2px solid var(--accent);
+  padding: 0.55rem 0.7rem;
+  background: rgb(111 255 193 / 5%);
+  color: #cfe2dc;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.73rem;
+}
+
+.editor-panel {
+  margin-top: 0.75rem;
+  overflow: hidden;
+}
+
+.panel-heading {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.code-preview {
+  min-height: 10rem;
+  margin: 0;
+  overflow-x: auto;
+  padding: 1rem;
+  color: #d9e8e3;
+  font: 0.82rem/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
+  tab-size: 4;
+  -webkit-overflow-scrolling: touch;
+}
+
+.transcript {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.75rem;
+  padding: 0.8rem 1rem;
+}
+
+.transcript p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.pulse {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0.3rem rgb(111 255 193 / 10%);
+}
+
+.control-dock {
+  position: fixed;
+  z-index: 10;
+  right: 1rem;
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  left: 1rem;
+  width: min(calc(100% - 2rem), 30rem);
+  min-height: 4.75rem;
+  margin: 0 auto;
+  border: 1px solid #38564d;
+  border-radius: 1.25rem;
+  padding: 0.55rem 1rem;
+  background: rgb(23 43 38 / 94%);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 40%);
+  backdrop-filter: blur(1rem);
+}
+
+.dock-button,
+.microphone-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  color: var(--text);
+}
+
+.dock-button {
+  display: grid;
+  gap: 0.1rem;
+  place-items: center;
+  background: transparent;
+  font-size: 0.7rem;
+}
+
+.dock-button span {
+  font-size: 1.2rem;
+}
+
+.dock-button:disabled {
+  color: #63736e;
+}
+
+.microphone-button {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 0.4rem rgb(111 255 193 / 10%);
+}
+
+.microphone-button span {
+  font-size: 1rem;
+}
+
+@media (min-width: 40rem) {
+  .app-shell {
+    padding-right: 2rem;
+    padding-left: 2rem;
+  }
+}
