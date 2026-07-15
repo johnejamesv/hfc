@@ -7,6 +7,7 @@ import {
   type RealtimeSessionState,
 } from "./realtime-transcription-client";
 import { MediaRecorderTranscriptionClient } from "./media-recorder-transcription-client";
+import type { TranscriptRoute } from "./transcript-router";
 
 const statusCopy: Record<RealtimeSessionState, string> = {
   idle: "Tap the microphone when you’re ready to code.",
@@ -30,6 +31,8 @@ interface VoiceSessionProps {
   readonly canUndo?: boolean;
   readonly canRedo?: boolean;
   readonly hasPendingProposal?: boolean;
+  readonly lastTranscript?: { readonly text: string; readonly interpretation: string };
+  readonly onCompletedTranscript?: (transcript: CompletedTranscript) => TranscriptRoute;
 }
 
 export function VoiceSession({
@@ -42,6 +45,8 @@ export function VoiceSession({
   canUndo = false,
   canRedo = false,
   hasPendingProposal = false,
+  lastTranscript,
+  onCompletedTranscript,
 }: VoiceSessionProps) {
   const client = useRef<VoiceClient | null>(null);
   const [state, setState] = useState<RealtimeSessionState>("idle");
@@ -57,12 +62,16 @@ export function VoiceSession({
       },
       onTranscript: (transcript) => {
         setTranscripts((current) => [transcript, ...current].slice(0, 3));
+        const route = onCompletedTranscript?.(transcript);
+        if (route?.kind === "control" && route.command === "stopListening") {
+          transcriptionClient.disconnect();
+        }
       },
     });
     client.current = transcriptionClient;
 
     return () => transcriptionClient.dispose();
-  }, [mode]);
+  }, [mode, onCompletedTranscript]);
 
   const toggleListening = () => {
     if (state === "listening" || state === "connecting") {
@@ -90,6 +99,11 @@ export function VoiceSession({
         <div>
           <p className="eyebrow">Voice session · {state}</p>
           <p>{error ?? statusCopy[state]}</p>
+          {lastTranscript ? (
+            <p className="transcript-interpretation">
+              Heard: {lastTranscript.text} · Interpreted: {lastTranscript.interpretation}
+            </p>
+          ) : null}
           {transcripts.length > 0 ? (
             <ol className="completed-transcripts" aria-label="Completed transcripts">
               {transcripts.map((transcript) => (

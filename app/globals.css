@@ -332,6 +332,11 @@ h2 {
   font-size: 0.82rem;
 }
 
+.transcript .transcript-interpretation {
+  margin-top: 0.5rem;
+  color: var(--text);
+}
+
 .test-results {
   margin-top: 0.75rem;
   border: 1px solid var(--line);

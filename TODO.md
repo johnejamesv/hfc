@@ -165,11 +165,11 @@ output, pass/fail results, syntax/runtime errors, timeout, late replies, and rec
 
 ### T-006 — Implement deterministic voice routing
 
-- [ ] Implement a pure transcript router with explicit `control`, `edit`, `dictation`, `ai`, and `unknown` results.
-- [ ] Match control and deterministic edit grammar before all AI routes.
-- [ ] Parse line numbers and inclusive line ranges.
-- [ ] Connect routed deterministic commands to the shared action dispatcher.
-- [ ] Show the raw transcript and interpreted action.
+- [x] Implement a pure transcript router with explicit `control`, `edit`, `dictation`, `ai`, and `unknown` results.
+- [x] Match control and deterministic edit grammar before all AI routes.
+- [x] Parse line numbers and inclusive line ranges.
+- [x] Connect routed deterministic commands to the shared action dispatcher.
+- [x] Show the raw transcript and interpreted action.
 
 Acceptance:
 
@@ -184,7 +184,17 @@ Acceptance:
 
 Prerequisites: T-002 and T-004.
 
-Evidence: pending.
+Evidence: `app/transcript-router.ts` normalizes only comparison text, then deterministically
+classifies exact control and edit grammar before dictation and AI cues. Its pure action adapter
+uses one-based inclusive line semantics, reports invalid line ranges without changing editor
+state, and creates the correctly indented New line insertion. `app/playground.tsx` routes
+completed voice turns through that adapter and the existing shared dispatcher, while
+`app/voice-session.tsx` retains the raw transcript and visible interpretation (including the
+unknown-input message). `app/transcript-router.test.ts` provides 33 table-driven and state
+fixtures for all required commands, normalization, unsupported additions, first/last lines,
+reversed/beyond-end ranges, and the non-mutating dictation/AI routes. On 2026-07-15,
+`npm run typecheck`, `npm run lint`, `npm test` (61 tests), `npm run build`, and `npm run
+test:e2e` passed; the latter recorded Playwright `status: passed`.
 
 ### T-007 — Implement literal Python dictation
 

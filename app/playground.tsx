@@ -6,10 +6,13 @@ import { CodeEditor } from "./code-editor";
 import { createEditorActionState, dispatchEditorAction, type EditorAction, type EditorActionState, type TextRange } from "./editor-actions";
 import { PythonTestRunner } from "./python-test-runner";
 import { VoiceSession } from "./voice-session";
+import { describeTranscriptRoute, editorActionForTranscriptRoute, routeTranscript, type TranscriptRoute } from "./transcript-router";
+import type { CompletedTranscript } from "./realtime-transcription-client";
 
 type VoiceMode = "realtime" | "recording";
 type ChallengeEditorStates = Record<ChallengeId, EditorActionState>;
 type EditorRevisions = Record<ChallengeId, number>;
+type LastTranscript = { readonly text: string; readonly interpretation: string };
 
 function createInitialEditorStates(): ChallengeEditorStates {
   return challenges.reduce<ChallengeEditorStates>((states, challenge) => {
@@ -29,6 +32,7 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
   const [selectedId, setSelectedId] = useState<ChallengeId>(challenges[0].id);
   const [editorStates, setEditorStates] = useState<ChallengeEditorStates>(createInitialEditorStates);
   const [editorRevisions, setEditorRevisions] = useState<EditorRevisions>(createInitialRevisions);
+  const [lastTranscript, setLastTranscript] = useState<LastTranscript>();
   const challenge = getChallenge(selectedId);
   const editorState = editorStates[selectedId];
 
@@ -51,6 +55,17 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
       ...current,
       [selectedId]: dispatchEditorAction(current[selectedId], { type: "select", range: selection }),
     }));
+  }, [selectedId]);
+
+  const handleCompletedTranscript = useCallback((transcript: CompletedTranscript): TranscriptRoute => {
+    const route = routeTranscript(transcript.text);
+    setLastTranscript({ text: transcript.text, interpretation: describeTranscriptRoute(route) });
+    setEditorStates((current) => {
+      const action = editorActionForTranscriptRoute(route, current[selectedId]);
+      if (!action) return current;
+      return { ...current, [selectedId]: dispatchEditorAction(current[selectedId], action) };
+    });
+    return route;
   }, [selectedId]);
 
   const resetSource = () => {
@@ -143,6 +158,8 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
         canUndo={editorState.undoStack.length > 0}
         canRedo={editorState.redoStack.length > 0}
         hasPendingProposal={Boolean(editorState.pendingProposal)}
+        lastTranscript={lastTranscript}
+        onCompletedTranscript={handleCompletedTranscript}
       />
     </main>
   );

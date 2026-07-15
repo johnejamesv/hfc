@@ -14,4 +14,26 @@ On 2026-07-15, these checks passed: `npm run typecheck`, `npm run lint`, `npm te
 
 Pyodide must remain loaded from its browser module URL in the worker. Importing the npm package made Next trace Node fallbacks such as `node:fs` and caused production builds to fail. The first real-worker e2e attempt also exceeded Playwright's default 30-second test limit even though all three cases had completed; the test has a 90-second allowance for cold Pyodide startup and now passes.
 
-The next highest-priority task is T-006: implement the deterministic transcript router. It should be a pure tested module, match exact control/edit grammar before literal or AI routes, and route the existing voice completed turns through the shared editor action dispatcher without guessing unknown phrases.
+T-006 is now complete and committed. `app/transcript-router.ts` is a pure router plus pure
+route-to-editor-action adapter. It recognizes only the documented exact grammar after
+comparison-only normalization, reports invalid one-based line ranges visibly without changing
+the document, and leaves dictation/AI routes non-mutating for their later tasks. Completed
+transcripts now reach `app/playground.tsx`, which dispatches deterministic actions through the
+same shared editor dispatcher as buttons. `app/voice-session.tsx` displays the latest untouched
+transcript and its interpretation; a spoken Stop command disconnects the microphone.
+
+## Verification
+
+On 2026-07-15, `npm run typecheck`, `npm run lint`, `npm test` (61 tests), `npm run build`,
+and `npm run test:e2e` passed. The Playwright report recorded `status: passed` after the real
+Pyodide run.
+
+## Hiccups and next task
+
+The command wrapper has a one-minute foreground limit, while production builds and the real
+Pyodide WebKit test can outlast it. Both continue in the background; confirm their final state
+from the generated build artifacts and `test-results/.last-run.json` when that occurs.
+
+The next highest-priority task is T-007: implement the pure literal Python dictation normalizer.
+It should consume the router's `dictation` content, preserve unknown words, implement all
+normative spacing/layout fixtures from `SPEC.md`, and insert the result in one shared action.

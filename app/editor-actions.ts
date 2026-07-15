@@ -36,7 +36,8 @@ export type EditorAction =
   | { readonly type: "run" }
   | { readonly type: "setProposal"; readonly proposal: PendingProposal }
   | { readonly type: "applyProposal" }
-  | { readonly type: "discardProposal" };
+  | { readonly type: "discardProposal" }
+  | { readonly type: "reportError"; readonly message: string };
 
 const INDENT = "    ";
 
@@ -69,6 +70,8 @@ export function dispatchEditorAction(state: EditorActionState, action: EditorAct
       return applyProposal(state);
     case "discardProposal":
       return { ...state, pendingProposal: undefined, error: undefined };
+    case "reportError":
+      return { ...state, error: action.message };
   }
 }
 
