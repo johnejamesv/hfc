@@ -20,7 +20,29 @@ const statusCopy: Record<RealtimeSessionState, string> = {
 type VoiceMode = "realtime" | "recording";
 type VoiceClient = Pick<RealtimeTranscriptionClient, "connect" | "disconnect" | "dispose">;
 
-export function VoiceSession({ mode = "realtime" }: { mode?: VoiceMode }) {
+interface VoiceSessionProps {
+  readonly mode?: VoiceMode;
+  readonly onUndo?: () => void;
+  readonly onRedo?: () => void;
+  readonly onRun?: () => void;
+  readonly onApply?: () => void;
+  readonly onDiscard?: () => void;
+  readonly canUndo?: boolean;
+  readonly canRedo?: boolean;
+  readonly hasPendingProposal?: boolean;
+}
+
+export function VoiceSession({
+  mode = "realtime",
+  onUndo,
+  onRedo,
+  onRun,
+  onApply,
+  onDiscard,
+  canUndo = false,
+  canRedo = false,
+  hasPendingProposal = false,
+}: VoiceSessionProps) {
   const client = useRef<VoiceClient | null>(null);
   const [state, setState] = useState<RealtimeSessionState>("idle");
   const [error, setError] = useState<string>();
@@ -79,9 +101,13 @@ export function VoiceSession({ mode = "realtime" }: { mode?: VoiceMode }) {
       </section>
 
       <nav className="control-dock" aria-label="Editor controls">
-        <button type="button" className="dock-button" aria-label="Undo" disabled>
+        <button type="button" className="dock-button" aria-label="Undo" onClick={onUndo} disabled={!canUndo}>
           <span aria-hidden="true">↶</span>
           Undo
+        </button>
+        <button type="button" className="dock-button" aria-label="Redo" onClick={onRedo} disabled={!canRedo}>
+          <span aria-hidden="true">↷</span>
+          Redo
         </button>
         <button
           type="button"
@@ -92,10 +118,16 @@ export function VoiceSession({ mode = "realtime" }: { mode?: VoiceMode }) {
         >
           <span aria-hidden="true">●</span>
         </button>
-        <button type="button" className="dock-button">
+        <button type="button" className="dock-button" onClick={onRun}>
           <span aria-hidden="true">▶</span>
           Run
         </button>
+        {hasPendingProposal ? (
+          <>
+            <button type="button" className="dock-button" onClick={onApply}>Apply</button>
+            <button type="button" className="dock-button" onClick={onDiscard}>Discard</button>
+          </>
+        ) : null}
       </nav>
     </>
   );

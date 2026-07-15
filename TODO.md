@@ -104,11 +104,11 @@ part of final device verification.
 
 ### T-004 — Establish the shared action and pending-edit model
 
-- [ ] Define typed actions for selection, insertion, indentation, deletion, undo, redo, run, apply, and discard.
-- [ ] Route visible editor controls through the shared action dispatcher.
-- [ ] Model an AI proposal separately from live CodeMirror state.
-- [ ] Apply a proposal as one undoable transaction.
-- [ ] Reject invalid ranges without changing the document.
+- [x] Define typed actions for selection, insertion, indentation, deletion, undo, redo, run, apply, and discard.
+- [x] Route visible editor controls through the shared action dispatcher.
+- [x] Model an AI proposal separately from live CodeMirror state.
+- [x] Apply a proposal as one undoable transaction.
+- [x] Reject invalid ranges without changing the document.
 
 Acceptance:
 
@@ -121,15 +121,25 @@ Acceptance:
 
 Prerequisites: T-003.
 
-Evidence: pending.
+Evidence: `app/editor-actions.ts` defines the microphone/OpenAI-independent typed action
+state, range validation, undo/redo stacks, run requests, and separately captured pending
+proposal model. `app/playground.tsx` now owns per-challenge action state and routes Undo,
+Redo, Run, Apply, and Discard controls through the shared dispatcher while syncing editor
+source and selection. `app/editor-actions.test.ts` covers the normative insertion,
+replacement, selection, deletion, indentation, outdent, proposal apply/discard, stale
+proposal, invalid range, run, undo, and redo examples. On 2026-07-15, `npm run
+typecheck`, `npm run lint`, `npm test` (25 tests), `npm run build`, and `npm run
+test:e2e` all passed. WebKit was installed and host browser dependencies were added before
+the successful e2e rerun; the first e2e attempt failed only because the WebKit executable
+and libraries were absent in the container.
 
 ### T-005 — Run bundled Python tests in a worker
 
-- [ ] Load Pyodide in a dedicated module Web Worker.
-- [ ] Preload the worker after the page becomes interactive and expose loading/ready/error states.
-- [ ] Execute the current solution with the selected challenge's tests.
-- [ ] Return standard output, exceptions, and structured per-test results.
-- [ ] Enforce a three-second timeout by terminating and recreating the worker.
+- [x] Load Pyodide in a dedicated module Web Worker.
+- [x] Preload the worker after the page becomes interactive and expose loading/ready/error states.
+- [x] Execute the current solution with the selected challenge's tests.
+- [x] Return standard output, exceptions, and structured per-test results.
+- [x] Enforce a three-second timeout by terminating and recreating the worker.
 
 Acceptance:
 
@@ -142,7 +152,16 @@ Acceptance:
 
 Prerequisites: T-003.
 
-Evidence: pending.
+Evidence: `app/workers/python.worker.ts` loads the browser-only Pyodide module inside a
+dedicated module worker and executes each selected challenge's source and bundled cases.
+`app/python-worker-client.ts` preloads the worker after the client mounts, queues runs until
+ready, gives every run an identifier, ignores stale responses, and terminates/recreates the
+worker after three seconds. `app/python-test-runner.tsx` uses the shared editor Run request
+count and presents loading, runtime error, timeout, captured output, structured exception,
+and named pass/fail states. `app/python-worker-client.test.ts` covers queued runs, standard
+output, pass/fail results, syntax/runtime errors, timeout, late replies, and recovery. On
+2026-07-15, `npm run typecheck`, `npm run lint`, `npm test` (28 tests), `npm run build`, and
+`npm run test:e2e` (including a real Pyodide 3/3 passing mobile-WebKit run) passed.
 
 ### T-006 — Implement deterministic voice routing
 

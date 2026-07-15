@@ -3,17 +3,19 @@
 import { useCallback, useState } from "react";
 import { challenges, getChallenge, type ChallengeId } from "./challenges";
 import { CodeEditor } from "./code-editor";
+import { createEditorActionState, dispatchEditorAction, type EditorAction, type EditorActionState, type TextRange } from "./editor-actions";
+import { PythonTestRunner } from "./python-test-runner";
 import { VoiceSession } from "./voice-session";
 
 type VoiceMode = "realtime" | "recording";
-type ChallengeSources = Record<ChallengeId, string>;
+type ChallengeEditorStates = Record<ChallengeId, EditorActionState>;
 type EditorRevisions = Record<ChallengeId, number>;
 
-function createInitialSources(): ChallengeSources {
-  return challenges.reduce<ChallengeSources>((sources, challenge) => {
-    sources[challenge.id] = challenge.starterCode;
-    return sources;
-  }, {} as ChallengeSources);
+function createInitialEditorStates(): ChallengeEditorStates {
+  return challenges.reduce<ChallengeEditorStates>((states, challenge) => {
+    states[challenge.id] = createEditorActionState(challenge.starterCode);
+    return states;
+  }, {} as ChallengeEditorStates);
 }
 
 function createInitialRevisions(): EditorRevisions {
@@ -25,16 +27,31 @@ function createInitialRevisions(): EditorRevisions {
 
 export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
   const [selectedId, setSelectedId] = useState<ChallengeId>(challenges[0].id);
-  const [sources, setSources] = useState<ChallengeSources>(createInitialSources);
+  const [editorStates, setEditorStates] = useState<ChallengeEditorStates>(createInitialEditorStates);
   const [editorRevisions, setEditorRevisions] = useState<EditorRevisions>(createInitialRevisions);
   const challenge = getChallenge(selectedId);
+  const editorState = editorStates[selectedId];
 
-  const updateSource = useCallback(
-    (source: string) => {
-      setSources((current) => ({ ...current, [selectedId]: source }));
-    },
-    [selectedId],
-  );
+  const dispatchAction = useCallback((action: EditorAction) => {
+    setEditorStates((current) => ({
+      ...current,
+      [selectedId]: dispatchEditorAction(current[selectedId], action),
+    }));
+  }, [selectedId]);
+
+  const updateSource = useCallback((source: string) => {
+    setEditorStates((current) => ({
+      ...current,
+      [selectedId]: { ...current[selectedId], source, error: undefined },
+    }));
+  }, [selectedId]);
+
+  const updateSelection = useCallback((selection: TextRange) => {
+    setEditorStates((current) => ({
+      ...current,
+      [selectedId]: dispatchEditorAction(current[selectedId], { type: "select", range: selection }),
+    }));
+  }, [selectedId]);
 
   const resetSource = () => {
     const confirmed = window.confirm(
@@ -45,7 +62,7 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
       return;
     }
 
-    setSources((current) => ({ ...current, [selectedId]: challenge.starterCode }));
+    setEditorStates((current) => ({ ...current, [selectedId]: createEditorActionState(challenge.starterCode) }));
     setEditorRevisions((current) => ({ ...current, [selectedId]: current[selectedId] + 1 }));
   };
 
@@ -101,12 +118,32 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
         </div>
         <CodeEditor
           key={`${selectedId}-${editorRevisions[selectedId]}`}
-          value={sources[selectedId]}
+          value={editorState.source}
+          selection={editorState.selection}
           onChange={updateSource}
+          onSelectionChange={updateSelection}
         />
       </section>
 
-      <VoiceSession mode={voiceMode} />
+      {editorState.error ? <p className="action-error" role="alert">{editorState.error}</p> : null}
+
+      <PythonTestRunner
+        challenge={challenge}
+        source={editorState.source}
+        runRequests={editorState.runRequests}
+      />
+
+      <VoiceSession
+        mode={voiceMode}
+        onUndo={() => dispatchAction({ type: "undo" })}
+        onRedo={() => dispatchAction({ type: "redo" })}
+        onRun={() => dispatchAction({ type: "run" })}
+        onApply={() => dispatchAction({ type: "applyProposal" })}
+        onDiscard={() => dispatchAction({ type: "discardProposal" })}
+        canUndo={editorState.undoStack.length > 0}
+        canRedo={editorState.redoStack.length > 0}
+        hasPendingProposal={Boolean(editorState.pendingProposal)}
+      />
     </main>
   );
 }

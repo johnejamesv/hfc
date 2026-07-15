@@ -38,3 +38,21 @@ test("shows a usable playground without horizontal page scrolling", async ({ pag
 
   expect(dimensions.scrollWidth).toBe(dimensions.clientWidth);
 });
+
+test("runs the bundled Python cases without blocking the editor", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.goto("/");
+  const editor = page.getByRole("textbox", { name: "Python code editor" });
+  await editor.fill(`def pair_sum(nums, target):
+    seen = {}
+    for index, value in enumerate(nums):
+        needed = target - value
+        if needed in seen:
+            return [seen[needed], index]
+        seen[value] = index
+    return []`);
+
+  await page.getByRole("button", { name: "Run" }).click();
+  await expect(page.getByRole("list", { name: "Test results" })).toContainText("Pass · finds a pair near the front", { timeout: 60_000 });
+  await expect(page.getByRole("list", { name: "Test results" })).toContainText("Pass · supports negative values");
+});

@@ -3,7 +3,7 @@
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { defaultHighlightStyle, indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
-import { EditorState, Transaction } from "@codemirror/state";
+import { EditorSelection, EditorState, Transaction } from "@codemirror/state";
 import {
   crosshairCursor,
   drawSelection,
@@ -20,7 +20,9 @@ import { useEffect, useRef } from "react";
 
 interface CodeEditorProps {
   readonly value: string;
+  readonly selection?: { readonly from: number; readonly to: number };
   readonly onChange: (value: string) => void;
+  readonly onSelectionChange?: (selection: { readonly from: number; readonly to: number }) => void;
   readonly ariaLabel?: string;
 }
 
@@ -52,15 +54,17 @@ const editorTheme = EditorView.theme({
   ".cm-activeLine, .cm-activeLineGutter": { backgroundColor: "#172b2688" },
 });
 
-export function CodeEditor({ value, onChange, ariaLabel = "Python code editor" }: CodeEditorProps) {
+export function CodeEditor({ value, selection, onChange, onSelectionChange, ariaLabel = "Python code editor" }: CodeEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView>(null);
   const onChangeRef = useRef(onChange);
+  const onSelectionChangeRef = useRef(onSelectionChange);
   const initialValue = useRef(value);
 
   useEffect(() => {
     onChangeRef.current = onChange;
-  }, [onChange]);
+    onSelectionChangeRef.current = onSelectionChange;
+  }, [onChange, onSelectionChange]);
 
   useEffect(() => {
     if (!host.current) {
@@ -91,6 +95,10 @@ export function CodeEditor({ value, onChange, ariaLabel = "Python code editor" }
             if (update.docChanged) {
               onChangeRef.current(update.state.doc.toString());
             }
+            if (update.selectionSet) {
+              const range = update.state.selection.main;
+              onSelectionChangeRef.current?.({ from: range.from, to: range.to });
+            }
           }),
           editorTheme,
         ],
@@ -117,6 +125,24 @@ export function CodeEditor({ value, onChange, ariaLabel = "Python code editor" }
       annotations: Transaction.addToHistory.of(false),
     });
   }, [value]);
+
+  useEffect(() => {
+    const editor = view.current;
+
+    if (!editor || !selection) {
+      return;
+    }
+
+    const current = editor.state.selection.main;
+    if (current.from === selection.from && current.to === selection.to) {
+      return;
+    }
+
+    editor.dispatch({
+      selection: EditorSelection.range(selection.from, selection.to),
+      annotations: Transaction.addToHistory.of(false),
+    });
+  }, [selection]);
 
   return <div className="code-editor" ref={host} />;
 }
