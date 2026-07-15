@@ -40,8 +40,8 @@ also verifies the primary shell controls and absence of horizontal page scrollin
 - [x] Add a minimal WebRTC transcription client with explicit connect/disconnect state.
 - [x] Show completed transcript turns on screen.
 - [x] Confirm permanent API credentials are absent from client bundles and browser storage.
-- [ ] Document the physical-iPhone result and any Safari-specific constraint.
-- [ ] If the four-hour Realtime spike fails, implement and document the one-utterance `MediaRecorder` fallback behind the same transcript callback.
+- [x] Document the physical-iPhone result and any Safari-specific constraint.
+- [x] If the four-hour Realtime spike fails, implement and document the one-utterance `MediaRecorder` fallback behind the same transcript callback.
 
 Acceptance:
 
@@ -54,10 +54,19 @@ Acceptance:
 
 Prerequisites: T-001.
 
-Evidence: The app uses the GA client-secret and browser-WebRTC flow, with the permanent
-credential read only by `app/api/realtime-token/route.ts`. Unit coverage proves repeated
-Connect and Disconnect safety, pending-connect invalidation, failure cleanup, and completed
-turn de-duplication. Physical-iPhone validation remains pending; see `agents.md`.
+Evidence: The app retains the GA client-secret and browser-WebRTC flow, with the permanent
+OpenAI credential read only by `app/api/realtime-token/route.ts`. Unit coverage proves
+repeated Connect and Disconnect safety, pending-connect invalidation, failure cleanup, and
+completed-turn de-duplication. Because OpenRouter does not provide that Realtime credential
+flow, the app selects a one-utterance `MediaRecorder` fallback for an OpenRouter key and sends
+the captured audio to the server-only `/api/transcribe` route using
+`openai/gpt-4o-transcribe`; raw audio is not persisted and both clients use the same completed
+transcript callback. On 2026-07-15, two consecutive record/stop/transcribe cycles succeeded
+in system Safari on an iPhone 13 Pro Max running iOS 18.7.8. The standalone Safari version
+was not exposed/found on the device. The first observed OpenRouter transcription took about
+90 seconds, so high and variable fallback latency is a known demo constraint. Typecheck,
+lint, the full 18-test unit suite, production build, and mobile-WebKit Playwright smoke test
+all pass. The WebKit browser binary was installed before the final e2e run.
 
 ### T-003 — Build the challenge and editor shell
 

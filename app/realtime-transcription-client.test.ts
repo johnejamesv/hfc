@@ -75,6 +75,40 @@ async function connectClient() {
 }
 
 describe("RealtimeTranscriptionClient", () => {
+  it("keeps the required receiver when using the browser fetch implementation", async () => {
+    const originalFetch = globalThis.fetch;
+    const media = createMediaStream();
+    const peer = makePeerConnection();
+    let fetchCount = 0;
+    const fetcher = vi.fn(function (this: typeof globalThis) {
+      if (this !== globalThis) {
+        throw new TypeError("Window.fetch requires a Window receiver");
+      }
+
+      fetchCount += 1;
+      return Promise.resolve(
+        fetchCount === 1
+          ? response({ value: "ephemeral-token" })
+          : response({}, { text: "answer-sdp" }),
+      );
+    }) as unknown as typeof fetch;
+    globalThis.fetch = fetcher;
+
+    try {
+      const client = new RealtimeTranscriptionClient({
+        createPeerConnection: () => peer.peerConnection,
+        getUserMedia: vi.fn().mockResolvedValue(media.stream),
+      });
+
+      await client.connect();
+
+      expect(client.getState()).toBe("listening");
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("uses one connection attempt when Connect is requested repeatedly", async () => {
     const connected = await connectClient();
 

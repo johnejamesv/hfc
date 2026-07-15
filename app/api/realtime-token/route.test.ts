@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-function openAIResponse(body: unknown, ok = true): Response {
+function openAIResponse(body: unknown, ok = true, status = ok ? 200 : 500): Response {
   return {
     ok,
+    status,
+    headers: new Headers(),
     json: vi.fn().mockResolvedValue(body),
   } as unknown as Response;
 }
@@ -23,6 +25,7 @@ describe("POST /api/realtime-token", () => {
   const originalTranscriptionModel = process.env.OPENAI_REALTIME_TRANSCRIPTION_MODEL;
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     restoreEnvironment("OPENAI_API_KEY", originalApiKey);
     restoreEnvironment("OPENAI_REALTIME_MODEL", originalRealtimeModel);
@@ -73,5 +76,28 @@ describe("POST /api/realtime-token", () => {
       },
     });
     expect(await response.json()).toEqual({ value: "ephemeral-key", expires_at: 12345 });
+  });
+
+  it("reports a rejected key without forwarding provider details to the browser", async () => {
+    process.env.OPENAI_API_KEY = "rejected-server-key";
+    const providerMessage = "Incorrect API key provided: rejected-server-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(openAIResponse({ error: { message: providerMessage } }, false, 401)),
+    );
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await POST();
+    const body = await response.json();
+
+    expect(response.status).toBe(502);
+    expect(body).toEqual({
+      error: "The server's OpenAI API key was rejected. Replace OPENAI_API_KEY and restart the server.",
+    });
+    expect(JSON.stringify(body)).not.toContain("rejected-server-key");
+    expect(log).toHaveBeenCalledWith(
+      "[realtime-token] OpenAI credential request failed",
+      { status: 401, requestId: undefined },
+    );
   });
 });

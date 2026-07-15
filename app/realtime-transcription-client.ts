@@ -1,4 +1,10 @@
-export type RealtimeSessionState = "idle" | "connecting" | "listening" | "disconnecting" | "error";
+export type RealtimeSessionState =
+  | "idle"
+  | "connecting"
+  | "listening"
+  | "disconnecting"
+  | "transcribing"
+  | "error";
 
 export type CompletedTranscript = {
   id: string;
@@ -54,7 +60,9 @@ export class RealtimeTranscriptionClient {
 
   constructor(options: RealtimeTranscriptionClientOptions = {}) {
     this.createPeerConnection = options.createPeerConnection ?? (() => new RTCPeerConnection());
-    this.fetcher = options.fetch ?? fetch;
+    // Safari requires Window.fetch to be invoked with Window as its receiver.
+    // Keeping the bare function and calling it later loses that receiver.
+    this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.getUserMedia = options.getUserMedia ?? (() => navigator.mediaDevices.getUserMedia({ audio: true }));
     this.onStateChange = options.onStateChange;
     this.onTranscript = options.onTranscript;

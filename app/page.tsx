@@ -5,6 +5,10 @@ const starterCode = `def pair_sum(nums, target):
     return []`;
 
 export default function Home() {
+  const configuredKey = process.env.OPENROUTER_API_KEY ?? process.env.OPENAI_API_KEY;
+  const voiceMode =
+    process.env.OPENROUTER_API_KEY || configuredKey?.startsWith("sk-or-") ? "recording" : "realtime";
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -41,7 +45,7 @@ export default function Home() {
         </pre>
       </section>
 
-      <VoiceSession />
+      <VoiceSession mode={voiceMode} />
     </main>
   );
 }

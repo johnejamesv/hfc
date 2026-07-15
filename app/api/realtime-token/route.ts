@@ -2,18 +2,6 @@ import { NextResponse } from "next/server";
 
 const OPENAI_CLIENT_SECRETS_URL = "https://api.openai.com/v1/realtime/client_secrets";
 
-type OpenAIError = {
-  error?: { message?: string };
-};
-
-function errorMessage(body: unknown): string | undefined {
-  if (typeof body !== "object" || body === null) {
-    return undefined;
-  }
-
-  return (body as OpenAIError).error?.message;
-}
-
 export async function POST() {
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -58,8 +46,18 @@ export async function POST() {
     const body: unknown = await response.json().catch(() => null);
 
     if (!response.ok) {
+      console.error("[realtime-token] OpenAI credential request failed", {
+        status: response.status,
+        requestId: response.headers.get("x-request-id") ?? undefined,
+      });
+
       return NextResponse.json(
-        { error: errorMessage(body) ?? "Could not start voice transcription. Please try again." },
+        {
+          error:
+            response.status === 401
+              ? "The server's OpenAI API key was rejected. Replace OPENAI_API_KEY and restart the server."
+              : "Could not start voice transcription. Check the server configuration and try again.",
+        },
         { status: 502 },
       );
     }
@@ -77,6 +75,7 @@ export async function POST() {
       expires_at: typeof credential.expires_at === "number" ? credential.expires_at : undefined,
     });
   } catch {
+    console.error("[realtime-token] Could not reach OpenAI");
     return NextResponse.json(
       { error: "Could not reach the transcription service. Check your connection and try again." },
       { status: 502 },
