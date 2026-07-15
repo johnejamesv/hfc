@@ -1,51 +1,9 @@
-import { VoiceSession } from "./voice-session";
-
-const starterCode = `def pair_sum(nums, target):
-    # Your solution goes here
-    return []`;
+import { Playground } from "./playground";
 
 export default function Home() {
   const configuredKey = process.env.OPENROUTER_API_KEY ?? process.env.OPENAI_API_KEY;
   const voiceMode =
     process.env.OPENROUTER_API_KEY || configuredKey?.startsWith("sk-or-") ? "recording" : "realtime";
 
-  return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div className="brand" aria-label="HFC home">
-          <span className="brand-mark" aria-hidden="true">H</span>
-          <span>HFC</span>
-        </div>
-        <span className="session-state">Ready</span>
-      </header>
-
-      <section className="challenge-card" aria-labelledby="challenge-title">
-        <p className="eyebrow">Demo challenge · Python</p>
-        <h1 id="challenge-title">Find a matching pair</h1>
-        <p>
-          Return the indices of two numbers whose sum matches the target.
-          Exactly one answer exists.
-        </p>
-        <div className="example">
-          <span>nums = [2, 7, 11, 15]</span>
-          <span>target = 9 → [0, 1]</span>
-        </div>
-      </section>
-
-      <section className="editor-panel" aria-labelledby="editor-title">
-        <div className="panel-heading">
-          <div>
-            <p className="eyebrow">Virtual file</p>
-            <h2 id="editor-title">solution.py</h2>
-          </div>
-          <span className="language-badge">Python</span>
-        </div>
-        <pre className="code-preview" aria-label="Python editor preview">
-          <code>{starterCode}</code>
-        </pre>
-      </section>
-
-      <VoiceSession mode={voiceMode} />
-    </main>
-  );
+  return <Playground voiceMode={voiceMode} />;
 }

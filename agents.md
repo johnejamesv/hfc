@@ -2,28 +2,37 @@
 
 ## Current state
 
-T-002 is complete and its implementation is ready to commit. The default path uses the
-server-only OpenAI Realtime credential endpoint and browser WebRTC. When
-`OPENROUTER_API_KEY` is set (or the legacy `OPENAI_API_KEY` has the `sk-or-` prefix), the UI
-uses the documented one-utterance `MediaRecorder` fallback instead. The fallback posts
-base64-encoded audio to server-only `/api/transcribe`, which uses
-`openai/gpt-4o-transcribe` through OpenRouter and never persists the audio. Both paths
-deliver the same completed-transcript callback.
+T-003 is complete and ready to commit. `app/challenges.ts` contains three typed original
+challenges and structured deterministic cases. `app/playground.tsx` owns selected-challenge
+and per-challenge source state in memory. `app/code-editor.tsx` is a controlled CodeMirror 6
+Python editor with syntax highlighting, line numbers, four-space indentation, keyboard
+history, and a horizontally scrollable code surface. Confirmed Reset restores starter code
+and clears that challenge's editor history by remounting it; canceled Reset changes nothing.
 
-## Physical-device evidence
+The previously committed `app/vendor/codemirror/node_modules` tree was not connected to the
+root package manifest. It has been removed, and the required CodeMirror packages are now
+declared in `package.json` and `package-lock.json`, so clean installs are reproducible.
 
-On 2026-07-15, two consecutive record/stop/transcribe cycles completed in system Safari on
-an iPhone 13 Pro Max running iOS 18.7.8. The standalone Safari version was not exposed on
-the device. The first OpenRouter transcription took roughly 90 seconds, so the fallback has
-high and variable latency and is a known demo constraint.
+## Verification
 
-## Verification and next task
+On 2026-07-15, a clean `npm ci` completed and the installed root tree contained the declared
+CodeMirror packages. After building first, these checks passed: `npm run build`,
+`npm run typecheck`, `npm run lint`, `npm test` (20 tests), and `npm run test:e2e`. The
+390×844 mobile WebKit test types into the real editor, switches away and back to prove
+in-memory retention, exercises canceled and confirmed Reset, and verifies no page-level
+horizontal scrolling. A headed iPhone-sized check repeated those interactions and confirmed
+the editor itself, not the page, scrolls for long code. A physical-iPhone keyboard/touch
+check was not repeated for T-003 and should be included in final device verification.
 
-On 2026-07-15, these checks passed after building first (the build regenerates `.next` type
-files that `tsc` consumes): `npm run build`, `npm run typecheck`, `npm run lint`, `npm test`
-(18 tests), and `npm run test:e2e` (mobile WebKit smoke test).
+## Hiccups and next task
 
-The next highest-priority task is T-003. It needs a typed three-challenge model, controlled
-CodeMirror 6 Python editor, per-challenge in-memory source retention, reset confirmation,
-and component coverage for switching and reset behavior. Keep this work independent of the
-voice/OpenAI integration.
+On this Windows host, `npm ci` and `next build` can run for several minutes with output held
+by RTK; a short command timeout can expire while the child process continues. Use a generous
+timeout and build before typecheck because `.next` types are generated during the build. The
+headed dev session reports a missing `/favicon.ico`; PWA icons are intentionally T-010
+scope, not a T-003 regression.
+
+The next highest-priority task is T-004: establish the typed shared editor/action model and
+pending proposal state. Keep it independent of microphone and OpenAI code, preserve
+CodeMirror undo/redo semantics, and cover every normative action/range/proposal example in
+`SPEC.md`.

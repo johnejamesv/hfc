@@ -27,7 +27,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-button {
+button,
+select {
   font: inherit;
 }
 
@@ -94,6 +95,37 @@ button {
   padding: 1rem;
 }
 
+.challenge-picker {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.challenge-picker label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.challenge-picker select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #38564d;
+  border-radius: 0.7rem;
+  padding: 0 2.4rem 0 0.75rem;
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.challenge-picker select:focus-visible,
+.reset-button:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .eyebrow {
   margin: 0 0 0.3rem;
   color: var(--accent);
@@ -127,16 +159,27 @@ h2 {
   line-height: 1.5;
 }
 
+.examples {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
 .example {
   display: grid;
   gap: 0.25rem;
-  margin-top: 0.85rem;
   border-left: 2px solid var(--accent);
   padding: 0.55rem 0.7rem;
   background: rgb(111 255 193 / 5%);
   color: #cfe2dc;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.73rem;
+}
+
+.example small {
+  color: var(--muted);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.7rem;
 }
 
 .editor-panel {
@@ -149,15 +192,33 @@ h2 {
   border-bottom: 1px solid var(--line);
 }
 
-.code-preview {
-  min-height: 10rem;
-  margin: 0;
-  overflow-x: auto;
-  padding: 1rem;
-  color: #d9e8e3;
-  font: 0.82rem/1.7 ui-monospace, SFMono-Regular, Menlo, monospace;
-  tab-size: 4;
-  -webkit-overflow-scrolling: touch;
+.editor-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reset-button {
+  min-height: 44px;
+  border: 1px solid #3f5f56;
+  border-radius: 0.65rem;
+  padding: 0 0.75rem;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.code-editor {
+  min-height: 12rem;
+  overflow: hidden;
+}
+
+.code-editor .cm-editor {
+  max-width: 100%;
+}
+
+.code-editor .cm-scroller {
+  overscroll-behavior: contain;
 }
 
 .transcript {

@@ -70,11 +70,11 @@ all pass. The WebKit browser binary was installed before the final e2e run.
 
 ### T-003 — Build the challenge and editor shell
 
-- [ ] Define a typed challenge model with starter code and deterministic tests.
-- [ ] Add three original Python challenges, including one designated demo challenge.
-- [ ] Render the challenge prompt, examples, and challenge selector.
-- [ ] Integrate a controlled CodeMirror 6 editor with Python highlighting and line numbers.
-- [ ] Add Reset with confirmation.
+- [x] Define a typed challenge model with starter code and deterministic tests.
+- [x] Add three original Python challenges, including one designated demo challenge.
+- [x] Render the challenge prompt, examples, and challenge selector.
+- [x] Integrate a controlled CodeMirror 6 editor with Python highlighting and line numbers.
+- [x] Add Reset with confirmation.
 
 Acceptance:
 
@@ -87,7 +87,20 @@ Acceptance:
 
 Prerequisites: T-001.
 
-Evidence: pending.
+Evidence: `app/challenges.ts` defines three typed, original challenges with structured
+deterministic cases and designates Find a matching pair as the demo. The client playground
+retains an independent in-memory source for every challenge and renders each prompt and
+example. CodeMirror 6 is installed through the root lockfile and provides a controlled,
+keyboard-editable Python document with syntax highlighting, line numbers, four-space
+indentation, and editor history. Reset cancellation leaves the current editor instance and
+source untouched; confirmation restores starter code and recreates the editor history.
+Component coverage exercises all three challenge switches, independent source retention,
+and both reset outcomes. After a clean `npm ci`, production build, typecheck, lint, all 20
+unit/component tests, and the 390×844 mobile-WebKit e2e test pass. The WebKit test types into
+the real CodeMirror editor, verifies challenge retention and both reset paths, and confirms
+there is no page-level horizontal scrolling. A headed iPhone-sized browser check confirmed
+the same behavior and touch-sized controls; a physical-iPhone editor/keyboard check remains
+part of final device verification.
 
 ### T-004 — Establish the shared action and pending-edit model
 
