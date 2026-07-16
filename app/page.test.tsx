@@ -29,6 +29,7 @@ describe("Home", () => {
     expect(screen.getByRole("button", { name: "Start listening" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Editor controls" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Voice transcript status" })).toHaveTextContent("idle");
+    expect(screen.getByText("Literal dictation vocabulary")).toBeInTheDocument();
   });
 
   it("retains each challenge source while switching between all three challenges", () => {

@@ -111,6 +111,10 @@ export function VoiceSession({
               ))}
             </ol>
           ) : null}
+          <details className="dictation-help">
+            <summary>Literal dictation vocabulary</summary>
+            <p>Start with “type”. Say colon, comma, dot, open or close paren, bracket, or brace; equals, comparisons, arithmetic operators; Python keywords; true, false, none; and new line, indent, or dedent.</p>
+          </details>
         </div>
       </section>
 

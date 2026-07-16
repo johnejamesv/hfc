@@ -96,12 +96,35 @@ describe("routed editor actions", () => {
     },
   );
 
-  it("maps recognized controls and edits to the shared dispatcher without mapping dictation or AI", () => {
+  it("maps recognized controls, edits, and literal dictation to the shared dispatcher", () => {
     const before = stateWithSelection({ from: 3, to: 3 });
     expect(editorActionForTranscriptRoute(routeTranscript("run tests"), before)).toEqual({ type: "run" });
     expect(editorActionForTranscriptRoute(routeTranscript("indent once"), before)).toEqual({ type: "indent" });
-    expect(editorActionForTranscriptRoute(routeTranscript("type return one"), before)).toBeUndefined();
+    expect(editorActionForTranscriptRoute(routeTranscript("type return one"), before)).toEqual({
+      type: "insert",
+      range: { from: 3, to: 3 },
+      text: "return one",
+    });
     expect(editorActionForTranscriptRoute(routeTranscript("write a function"), before)).toBeUndefined();
+  });
+
+  it("inserts dictation with the current line indentation in one undoable action", () => {
+    const before = dispatchEditorAction(createEditorActionState("  pass"), {
+      type: "select",
+      range: { from: 0, to: 6 },
+    });
+    const action = editorActionForTranscriptRoute(
+      routeTranscript("type for item in nums colon new line indent return item"),
+      before,
+    );
+    expect(action).toEqual({
+      type: "insert",
+      range: { from: 0, to: 6 },
+      text: "  for item in nums:\n      return item",
+    });
+    const after = dispatchEditorAction(before, action!);
+    expect(after.source).toBe("  for item in nums:\n      return item");
+    expect(dispatchEditorAction(after, { type: "undo" }).source).toBe("  pass");
   });
 
   it("inserts a newline with the current line indentation as one shared action", () => {

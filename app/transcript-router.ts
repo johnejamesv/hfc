@@ -1,4 +1,5 @@
 import type { EditorAction, EditorActionState, TextRange } from "./editor-actions";
+import { normalizePythonDictation } from "./python-dictation";
 
 export type ControlCommand = "run" | "undo" | "redo" | "apply" | "discard" | "stopListening";
 
@@ -81,6 +82,11 @@ export function editorActionForTranscriptRoute(
   if (route.kind === "control") {
     return controlAction(route.command);
   }
+  if (route.kind === "dictation") {
+    if (!validRange(state.source, state.selection)) return { type: "reportError", message: "Invalid range" };
+    const text = normalizePythonDictation(route.content, indentationAtSelection(state));
+    return text ? { type: "insert", range: state.selection, text } : undefined;
+  }
   if (route.kind !== "edit") return undefined;
 
   switch (route.command.type) {
@@ -111,7 +117,7 @@ export function editorActionForTranscriptRoute(
 
 export function describeTranscriptRoute(route: TranscriptRoute): string {
   if (route.kind === "unknown") return "I didn't understand that command.";
-  if (route.kind === "dictation") return "Literal dictation";
+  if (route.kind === "dictation") return `Literal dictation: ${normalizePythonDictation(route.content)}`;
   if (route.kind === "ai") return route.request === "write" ? "AI write request" : "AI change request";
   if (route.kind === "control") return route.command === "run" ? "Run tests" : route.command;
   if (route.command.type === "selectLines") return `Select lines ${route.command.fromLine} through ${route.command.toLine}`;
@@ -161,4 +167,9 @@ function newLineAction(state: EditorActionState): EditorAction {
 
 function validRange(source: string, range: TextRange): boolean {
   return range.from >= 0 && range.to >= range.from && range.to <= source.length;
+}
+
+function indentationAtSelection(state: EditorActionState): string {
+  const lineStart = state.source.lastIndexOf("\n", Math.max(0, state.selection.to - 1)) + 1;
+  return state.source.slice(lineStart).match(/^[ \t]*/)?.[0] ?? "";
 }

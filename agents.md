@@ -34,6 +34,26 @@ The command wrapper has a one-minute foreground limit, while production builds a
 Pyodide WebKit test can outlast it. Both continue in the background; confirm their final state
 from the generated build artifacts and `test-results/.last-run.json` when that occurs.
 
-The next highest-priority task is T-007: implement the pure literal Python dictation normalizer.
-It should consume the router's `dictation` content, preserve unknown words, implement all
-normative spacing/layout fixtures from `SPEC.md`, and insert the result in one shared action.
+T-007 is now complete and committed. `app/python-dictation.ts` is a pure, case-insensitive,
+longest-phrase-first literal Python normalizer. It preserves unknown word spelling and order,
+implements every documented token plus conventional spacing, and applies `new line`, `indent`,
+and `dedent` relative to a supplied baseline indentation. `app/transcript-router.ts` turns a
+dictation route into a single shared insert action and includes the normalized Python in the
+visible interpretation. `app/voice-session.tsx` exposes the supported vocabulary in a compact
+details element.
+
+## Verification
+
+On 2026-07-16, `npm run typecheck`, `npm test` (79 tests), and a changed-file ESLint check
+passed. `npm run lint`, `npm run build`, and `npm run test:e2e` ran past the one-minute foreground
+wrapper limit; the lint/build processes exited in the background, while Playwright's
+`test-results/.last-run.json` records `status: passed`. The wrapper does not retain the full
+lint/build exit output after timing out, so rerun either foreground command if its exact status
+is needed.
+
+## Hiccups and next task
+
+The normalizer's baseline indentation is deliberately applied to every emitted line, including
+the first. The router derives that baseline from the line containing the selection end; a future
+change to selection-direction support should revisit that choice. The next highest-priority task
+is T-008: targeted AI write/change proposals.

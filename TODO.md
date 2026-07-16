@@ -198,11 +198,11 @@ test:e2e` passed; the latter recorded Playwright `status: passed`.
 
 ### T-007 — Implement literal Python dictation
 
-- [ ] Implement the documented spoken-token vocabulary as a pure normalizer.
-- [ ] Support new lines and indentation relative to the current editor context.
-- [ ] Insert normalized `type ...` utterances through the shared action dispatcher.
-- [ ] Keep the raw transcript and normalized Python visible.
-- [ ] Document the supported vocabulary in the UI.
+- [x] Implement the documented spoken-token vocabulary as a pure normalizer.
+- [x] Support new lines and indentation relative to the current editor context.
+- [x] Insert normalized `type ...` utterances through the shared action dispatcher.
+- [x] Keep the raw transcript and normalized Python visible.
+- [x] Document the supported vocabulary in the UI.
 
 Acceptance:
 
@@ -215,7 +215,14 @@ Acceptance:
 
 Prerequisites: T-004 and T-006.
 
-Evidence: pending.
+Evidence: `app/python-dictation.ts` is a pure, longest-phrase-first normalizer that preserves
+unknown word spelling and implements the documented Python tokens, spacing, and layout. The
+router converts each dictation route into one shared insert action with the current line's
+indentation; its visible interpretation includes the normalized Python. `app/python-dictation.test.ts`
+contains all five normative fixtures, documented-vocabulary coverage, casing/unknown-word, and
+relative-indentation fixtures. On 2026-07-16, `npm run typecheck`, `npm test` (79 tests), and
+the changed-file ESLint check passed. The full lint and production-build processes completed
+after the one-minute wrapper limit; Playwright recorded `status: passed` for `npm run test:e2e`.
 
 ### T-008 — Add targeted AI write/change proposals
 
