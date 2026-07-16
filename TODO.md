@@ -226,12 +226,12 @@ after the one-minute wrapper limit; Playwright recorded `status: passed` for `np
 
 ### T-008 — Add targeted AI write/change proposals
 
-- [ ] Add a server-only Responses API adapter with strict structured output.
-- [ ] Validate requests and responses at the server boundary.
-- [ ] Implement `write` at the cursor/selection and selection-required `change` behavior.
-- [ ] Return a replacement and concise explanation without applying it.
-- [ ] Render a readable mobile diff with Apply and Discard controls.
-- [ ] Provide a deterministic mock adapter for tests and local UI development.
+- [x] Add a server-only Responses API adapter with strict structured output.
+- [x] Validate requests and responses at the server boundary.
+- [x] Implement `write` at the cursor/selection and selection-required `change` behavior.
+- [x] Return a replacement and concise explanation without applying it.
+- [x] Render a readable mobile diff with Apply and Discard controls.
+- [x] Provide a deterministic mock adapter for tests and local UI development.
 
 Acceptance:
 
@@ -245,7 +245,16 @@ Acceptance:
 
 Prerequisites: T-004.
 
-Evidence: pending.
+Evidence: `app/api/edit/route.ts` validates bounded edit requests, uses the Responses API
+with a strict `replacement`/`explanation` JSON schema, and keeps `OPENAI_API_KEY` server-only.
+The `HFC_EDIT_ADAPTER=mock` option provides deterministic local proposals without a key.
+`app/playground.tsx` rejects an unselected `change` before an API call, captures source and
+range for the pending proposal, and renders the mobile review panel before either shared Apply
+or Discard action can mutate the editor. `app/api/edit/route.test.ts`,
+`app/ai-edit-client.test.ts`, and `app/playground-ai.test.tsx` cover validation, malformed
+output, key isolation, mock mode, client failures, selection gating, review, and captured-range
+application. On 2026-07-17, `npm run typecheck`, `npm run lint`, `npm test` (87 tests),
+`npm run build`, and `npm run test:e2e` (2 mobile-WebKit tests) passed.
 
 ### T-009 — Complete the hands-free interaction loop
 

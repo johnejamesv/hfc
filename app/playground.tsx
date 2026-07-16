@@ -4,6 +4,9 @@ import { useCallback, useState } from "react";
 import { challenges, getChallenge, type ChallengeId } from "./challenges";
 import { CodeEditor } from "./code-editor";
 import { createEditorActionState, dispatchEditorAction, type EditorAction, type EditorActionState, type TextRange } from "./editor-actions";
+import { requestEditProposal } from "./ai-edit-client";
+import type { EditRequestKind } from "./ai-edit-protocol";
+import { ProposalReview } from "./proposal-review";
 import { PythonTestRunner } from "./python-test-runner";
 import { VoiceSession } from "./voice-session";
 import { describeTranscriptRoute, editorActionForTranscriptRoute, routeTranscript, type TranscriptRoute } from "./transcript-router";
@@ -33,6 +36,7 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
   const [editorStates, setEditorStates] = useState<ChallengeEditorStates>(createInitialEditorStates);
   const [editorRevisions, setEditorRevisions] = useState<EditorRevisions>(createInitialRevisions);
   const [lastTranscript, setLastTranscript] = useState<LastTranscript>();
+  const [isRequestingProposal, setIsRequestingProposal] = useState(false);
   const challenge = getChallenge(selectedId);
   const editorState = editorStates[selectedId];
 
@@ -57,16 +61,81 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
     }));
   }, [selectedId]);
 
+  const requestProposal = useCallback(async (kind: EditRequestKind, instruction: string) => {
+    const capturedId = selectedId;
+    const capturedState = editorState;
+    const capturedChallenge = challenge;
+    if (kind === "change" && capturedState.selection.from === capturedState.selection.to) {
+      setEditorStates((current) => ({
+        ...current,
+        [capturedId]: dispatchEditorAction(current[capturedId], {
+          type: "reportError",
+          message: "Select code before asking HFC to change it.",
+        }),
+      }));
+      return;
+    }
+    if (!instruction.trim()) {
+      setEditorStates((current) => ({
+        ...current,
+        [capturedId]: dispatchEditorAction(current[capturedId], {
+          type: "reportError",
+          message: "Describe the requested edit in a short phrase.",
+        }),
+      }));
+      return;
+    }
+
+    setIsRequestingProposal(true);
+    try {
+      const proposal = await requestEditProposal({
+        kind,
+        instruction,
+        challengeSummary: capturedChallenge.summary,
+        source: capturedState.source,
+        range: capturedState.selection,
+      });
+      setEditorStates((current) => ({
+        ...current,
+        [capturedId]: dispatchEditorAction(current[capturedId], {
+          type: "setProposal",
+          proposal: {
+            capturedSource: capturedState.source,
+            range: capturedState.selection,
+            replacement: proposal.replacement,
+            explanation: proposal.explanation,
+          },
+        }),
+      }));
+      setLastTranscript((current) => current ? {
+        ...current,
+        interpretation: `AI proposal ready: ${proposal.explanation}`,
+      } : current);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The edit request could not be completed. Please try again.";
+      setEditorStates((current) => ({
+        ...current,
+        [capturedId]: dispatchEditorAction(current[capturedId], { type: "reportError", message }),
+      }));
+    } finally {
+      setIsRequestingProposal(false);
+    }
+  }, [challenge, editorState, selectedId]);
+
   const handleCompletedTranscript = useCallback((transcript: CompletedTranscript): TranscriptRoute => {
     const route = routeTranscript(transcript.text);
     setLastTranscript({ text: transcript.text, interpretation: describeTranscriptRoute(route) });
+    if (route.kind === "ai") {
+      void requestProposal(route.request, route.instruction);
+      return route;
+    }
     setEditorStates((current) => {
       const action = editorActionForTranscriptRoute(route, current[selectedId]);
       if (!action) return current;
       return { ...current, [selectedId]: dispatchEditorAction(current[selectedId], action) };
     });
     return route;
-  }, [selectedId]);
+  }, [requestProposal, selectedId]);
 
   const resetSource = () => {
     const confirmed = window.confirm(
@@ -141,6 +210,15 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
       </section>
 
       {editorState.error ? <p className="action-error" role="alert">{editorState.error}</p> : null}
+
+      {isRequestingProposal ? <p className="proposal-status" role="status">Creating AI proposal…</p> : null}
+      {editorState.pendingProposal ? (
+        <ProposalReview
+          proposal={editorState.pendingProposal}
+          onApply={() => dispatchAction({ type: "applyProposal" })}
+          onDiscard={() => dispatchAction({ type: "discardProposal" })}
+        />
+      ) : null}
 
       <PythonTestRunner
         challenge={challenge}

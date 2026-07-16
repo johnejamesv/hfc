@@ -57,3 +57,30 @@ The normalizer's baseline indentation is deliberately applied to every emitted l
 the first. The router derives that baseline from the line containing the selection end; a future
 change to selection-direction support should revisit that choice. The next highest-priority task
 is T-008: targeted AI write/change proposals.
+
+T-008 is now complete and committed. `app/api/edit/route.ts` is a server-only OpenAI Responses
+API adapter that accepts only the challenge summary, current Python source, bounded selection,
+and instruction. It uses strict structured output for a replacement and concise explanation,
+validates both boundaries, never returns `OPENAI_API_KEY`, and supports deterministic local
+development with `HFC_EDIT_ADAPTER=mock`. `app/playground.tsx` captures each proposal against
+its source/range and shows a mobile review panel until the existing shared Apply or Discard action
+is chosen. A `change` turn with a collapsed selection is rejected before the edit endpoint is
+called.
+
+## Verification
+
+On 2026-07-17, `npm run typecheck`, `npm run lint`, `npm test` (87 tests), and
+`npm run test:e2e` (2 mobile-WebKit tests) passed. `npm run build` exceeded the one-minute
+foreground wrapper but exited in the background; `.next/BUILD_ID` and the compiled
+`.next/server/app/api/edit/route.js` were present afterwards. Route, browser-client, and
+playground tests cover structured-output validation, malformed responses, key isolation, mock
+mode, selection gating without a request, review, and captured-range Apply behavior.
+
+## Hiccups and next task
+
+The current mock proposal intentionally prefixes the replacement with a comment so local review
+has a visible diff; it is not intended to solve the challenge. The primary OpenAI docs MCP was
+added globally during this handoff and becomes available after a Codex restart; official web docs
+were used as the temporary fallback. The next highest-priority task is T-009: complete the
+hands-free interaction loop, especially completed-turn de-duplication and serialization while
+edit requests or tests are active.

@@ -332,6 +332,96 @@ h2 {
   font-size: 0.82rem;
 }
 
+.proposal-status,
+.proposal-review {
+  margin-top: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+}
+
+.proposal-status {
+  padding: 0.7rem 0.85rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.proposal-review {
+  overflow: hidden;
+}
+
+.proposal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.proposal-range {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.proposal-explanation {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.proposal-diff {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0 0.9rem 0.85rem;
+}
+
+.proposal-diff > div > span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.proposal-diff pre {
+  overflow-x: auto;
+  margin: 0.35rem 0 0;
+  padding: 0.65rem;
+  border-radius: 0.5rem;
+  font-size: 0.76rem;
+  white-space: pre-wrap;
+}
+
+.proposal-before { background: rgb(139 63 69 / 18%); color: #ffd1d6; }
+.proposal-after { background: rgb(111 255 193 / 10%); color: var(--accent); }
+
+.proposal-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.proposal-controls button {
+  min-height: 44px;
+  border: 1px solid #3f5f56;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.proposal-controls button:first-child {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+
 .dictation-help {
   margin-top: 0.7rem;
   color: var(--muted);
