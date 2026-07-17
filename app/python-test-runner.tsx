@@ -9,18 +9,22 @@ interface PythonTestRunnerProps {
   readonly challenge: Challenge;
   readonly source: string;
   readonly runRequests: number;
+  readonly onRunStarted?: (requestId: number) => void;
+  readonly onRunFinished?: (requestId: number) => void;
 }
 
 function createWorker(): WorkerLike {
   return new Worker(new URL("./workers/python.worker.ts", import.meta.url), { type: "module" }) as unknown as WorkerLike;
 }
 
-export function PythonTestRunner({ challenge, source, runRequests }: PythonTestRunnerProps) {
+export function PythonTestRunner({ challenge, source, runRequests, onRunStarted, onRunFinished }: PythonTestRunnerProps) {
   const [runtimeState, setRuntimeState] = useState<PythonRuntimeState>("loading");
   const [runtimeError, setRuntimeError] = useState<string>();
   const [result, setResult] = useState<PythonRunResult>();
   const client = useRef<PythonWorkerClient | undefined>(undefined);
   const processedRequests = useRef(0);
+  const onRunFinishedRef = useRef(onRunFinished);
+  onRunFinishedRef.current = onRunFinished;
 
   useEffect(() => {
     if (typeof Worker === "undefined") {
@@ -34,8 +38,12 @@ export function PythonTestRunner({ challenge, source, runRequests }: PythonTestR
       onStateChange: (state, error) => {
         setRuntimeState(state);
         setRuntimeError(error);
+        if (state === "error" && processedRequests.current > 0) onRunFinishedRef.current?.(processedRequests.current);
       },
-      onResult: setResult,
+      onResult: (nextResult) => {
+        setResult(nextResult);
+        onRunFinishedRef.current?.(nextResult.requestId);
+      },
     });
     client.current = nextClient;
     return () => nextClient.dispose();
@@ -45,6 +53,11 @@ export function PythonTestRunner({ challenge, source, runRequests }: PythonTestR
     if (runRequests <= processedRequests.current) return;
     processedRequests.current = runRequests;
     setResult(undefined);
+    onRunStarted?.(runRequests);
+    if (!client.current) {
+      onRunFinished?.(runRequests);
+      return;
+    }
     client.current?.run({
       type: "run",
       requestId: runRequests,
@@ -52,7 +65,7 @@ export function PythonTestRunner({ challenge, source, runRequests }: PythonTestR
       functionName: challenge.functionName,
       tests: challenge.tests,
     });
-  }, [challenge, runRequests, source]);
+  }, [challenge, onRunFinished, onRunStarted, runRequests, source]);
 
   const summary = runtimeState === "loading"
     ? "Python runtime loading"

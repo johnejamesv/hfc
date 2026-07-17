@@ -258,11 +258,11 @@ application. On 2026-07-17, `npm run typecheck`, `npm run lint`, `npm test` (87 
 
 ### T-009 — Complete the hands-free interaction loop
 
-- [ ] Feed each completed transcript turn into the router exactly once.
-- [ ] Automatically return to listening after handling an utterance while the session remains active.
-- [ ] Wire voice Apply, Discard, Run, Undo, Redo, and Stop to the same actions as buttons.
-- [ ] Prevent commands recorded during transcribing, applying, or running from executing twice.
-- [ ] Announce listening, pending edit, run completion, and errors accessibly.
+- [x] Feed each completed transcript turn into the router exactly once.
+- [x] Automatically return to listening after handling an utterance while the session remains active.
+- [x] Wire voice Apply, Discard, Run, Undo, Redo, and Stop to the same actions as buttons.
+- [x] Prevent commands recorded during transcribing, applying, or running from executing twice.
+- [x] Announce listening, pending edit, run completion, and errors accessibly.
 
 Acceptance:
 
@@ -277,7 +277,17 @@ Acceptance:
 
 Prerequisites: T-002, T-005, T-006, T-007, and T-008.
 
-Evidence: pending.
+Evidence: `app/completed-turn-queue.ts` records every accepted completed-turn identifier,
+classifies it once, serializes it behind active AI edits and test runs, and gives Stop priority
+over queued work. The playground resolves voice routes through the same editor dispatcher as
+the visible controls; Run waits for its Python result before the next turn drains. The recording
+fallback re-arms automatically after a completed turn while the requested session remains active.
+`app/completed-turn-queue.test.ts` covers before/during/after duplicate delivery, arrival-order
+serialization, and Stop clearing queued turns; the playground test proves a duplicate completed
+turn changes the document once. On 2026-07-17, `npm run typecheck`, `npm run lint`, `npm test`
+(91 tests), and `npm run build` passed. `npm run test:e2e` needs a clean rerun: port 3000 was
+occupied by an existing Next dev server returning its “missing required error components” recovery
+page, and Playwright's replacement server timed out waiting for that port.
 
 ## P1: Demo completeness
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { challenges, getChallenge, type ChallengeId } from "./challenges";
 import { CodeEditor } from "./code-editor";
 import { createEditorActionState, dispatchEditorAction, type EditorAction, type EditorActionState, type TextRange } from "./editor-actions";
@@ -11,6 +11,7 @@ import { PythonTestRunner } from "./python-test-runner";
 import { VoiceSession } from "./voice-session";
 import { describeTranscriptRoute, editorActionForTranscriptRoute, routeTranscript, type TranscriptRoute } from "./transcript-router";
 import type { CompletedTranscript } from "./realtime-transcription-client";
+import { CompletedTurnQueue, type CompletedTurnReceipt } from "./completed-turn-queue";
 
 type VoiceMode = "realtime" | "recording";
 type ChallengeEditorStates = Record<ChallengeId, EditorActionState>;
@@ -37,55 +38,77 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
   const [editorRevisions, setEditorRevisions] = useState<EditorRevisions>(createInitialRevisions);
   const [lastTranscript, setLastTranscript] = useState<LastTranscript>();
   const [isRequestingProposal, setIsRequestingProposal] = useState(false);
+  const [runAnnouncement, setRunAnnouncement] = useState<string>();
+  const editorStatesRef = useRef(editorStates);
+  const selectedIdRef = useRef(selectedId);
+  const proposalInFlight = useRef(false);
+  const runInFlight = useRef(false);
+  const runWaiters = useRef(new Map<number, () => void>());
+  const turnHandler = useRef<(turn: { readonly transcript: CompletedTranscript; readonly route: TranscriptRoute }) => Promise<void>>(async () => undefined);
+  const turnQueue = useRef<CompletedTurnQueue<TranscriptRoute> | undefined>(undefined);
   const challenge = getChallenge(selectedId);
   const editorState = editorStates[selectedId];
 
-  const dispatchAction = useCallback((action: EditorAction) => {
-    setEditorStates((current) => ({
-      ...current,
-      [selectedId]: dispatchEditorAction(current[selectedId], action),
-    }));
-  }, [selectedId]);
+  if (!turnQueue.current) {
+    turnQueue.current = new CompletedTurnQueue({
+      classify: (transcript) => routeTranscript(transcript.text),
+      canProcess: () => !proposalInFlight.current && !runInFlight.current,
+      isStop: (route) => route.kind === "control" && route.command === "stopListening",
+      onTurn: (turn) => turnHandler.current(turn),
+    });
+    turnQueue.current.start();
+  }
+
+  const updateChallengeState = useCallback((id: ChallengeId, update: (state: EditorActionState) => EditorActionState) => {
+    const next = { ...editorStatesRef.current, [id]: update(editorStatesRef.current[id]) };
+    editorStatesRef.current = next;
+    setEditorStates(next);
+  }, []);
+
+  const markRunStarted = useCallback(() => {
+    runInFlight.current = true;
+    setRunAnnouncement("Tests running.");
+  }, []);
+
+  const dispatchAction = useCallback((action: EditorAction, id = selectedIdRef.current) => {
+    if (action.type === "run") markRunStarted();
+    updateChallengeState(id, (state) => dispatchEditorAction(state, action));
+  }, [markRunStarted, updateChallengeState]);
 
   const updateSource = useCallback((source: string) => {
-    setEditorStates((current) => ({
-      ...current,
-      [selectedId]: { ...current[selectedId], source, error: undefined },
-    }));
-  }, [selectedId]);
+    const id = selectedIdRef.current;
+    updateChallengeState(id, (state) => ({ ...state, source, error: undefined }));
+  }, [updateChallengeState]);
 
   const updateSelection = useCallback((selection: TextRange) => {
-    setEditorStates((current) => ({
-      ...current,
-      [selectedId]: dispatchEditorAction(current[selectedId], { type: "select", range: selection }),
-    }));
-  }, [selectedId]);
+    const id = selectedIdRef.current;
+    dispatchAction({ type: "select", range: selection }, id);
+  }, [dispatchAction]);
 
   const requestProposal = useCallback(async (kind: EditRequestKind, instruction: string) => {
-    const capturedId = selectedId;
-    const capturedState = editorState;
-    const capturedChallenge = challenge;
+    const capturedId = selectedIdRef.current;
+    const capturedState = editorStatesRef.current[capturedId];
+    const capturedChallenge = getChallenge(capturedId);
     if (kind === "change" && capturedState.selection.from === capturedState.selection.to) {
-      setEditorStates((current) => ({
-        ...current,
-        [capturedId]: dispatchEditorAction(current[capturedId], {
+      updateChallengeState(capturedId, (state) =>
+        dispatchEditorAction(state, {
           type: "reportError",
           message: "Select code before asking HFC to change it.",
         }),
-      }));
+      );
       return;
     }
     if (!instruction.trim()) {
-      setEditorStates((current) => ({
-        ...current,
-        [capturedId]: dispatchEditorAction(current[capturedId], {
+      updateChallengeState(capturedId, (state) =>
+        dispatchEditorAction(state, {
           type: "reportError",
           message: "Describe the requested edit in a short phrase.",
         }),
-      }));
+      );
       return;
     }
 
+    proposalInFlight.current = true;
     setIsRequestingProposal(true);
     try {
       const proposal = await requestEditProposal({
@@ -95,9 +118,8 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
         source: capturedState.source,
         range: capturedState.selection,
       });
-      setEditorStates((current) => ({
-        ...current,
-        [capturedId]: dispatchEditorAction(current[capturedId], {
+      updateChallengeState(capturedId, (state) =>
+        dispatchEditorAction(state, {
           type: "setProposal",
           proposal: {
             capturedSource: capturedState.source,
@@ -106,36 +128,65 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
             explanation: proposal.explanation,
           },
         }),
-      }));
+      );
       setLastTranscript((current) => current ? {
         ...current,
         interpretation: `AI proposal ready: ${proposal.explanation}`,
       } : current);
     } catch (error) {
       const message = error instanceof Error ? error.message : "The edit request could not be completed. Please try again.";
-      setEditorStates((current) => ({
-        ...current,
-        [capturedId]: dispatchEditorAction(current[capturedId], { type: "reportError", message }),
-      }));
+      updateChallengeState(capturedId, (state) => dispatchEditorAction(state, { type: "reportError", message }));
     } finally {
+      proposalInFlight.current = false;
       setIsRequestingProposal(false);
+      turnQueue.current?.resume();
     }
-  }, [challenge, editorState, selectedId]);
+  }, [updateChallengeState]);
 
-  const handleCompletedTranscript = useCallback((transcript: CompletedTranscript): TranscriptRoute => {
-    const route = routeTranscript(transcript.text);
+  const runFromVoice = useCallback(() => {
+    const id = selectedIdRef.current;
+    const requestId = editorStatesRef.current[id].runRequests + 1;
+    return new Promise<void>((resolve) => {
+      runWaiters.current.set(requestId, resolve);
+      dispatchAction({ type: "run" }, id);
+    });
+  }, [dispatchAction]);
+
+  turnHandler.current = async ({ transcript, route }) => {
     setLastTranscript({ text: transcript.text, interpretation: describeTranscriptRoute(route) });
     if (route.kind === "ai") {
-      void requestProposal(route.request, route.instruction);
-      return route;
+      await requestProposal(route.request, route.instruction);
+      return;
     }
-    setEditorStates((current) => {
-      const action = editorActionForTranscriptRoute(route, current[selectedId]);
-      if (!action) return current;
-      return { ...current, [selectedId]: dispatchEditorAction(current[selectedId], action) };
-    });
-    return route;
-  }, [requestProposal, selectedId]);
+    if (route.kind === "control" && route.command === "run") {
+      await runFromVoice();
+      return;
+    }
+    const id = selectedIdRef.current;
+    const action = editorActionForTranscriptRoute(route, editorStatesRef.current[id]);
+    if (action) dispatchAction(action, id);
+  };
+
+  const handleCompletedTranscript = useCallback((transcript: CompletedTranscript): CompletedTurnReceipt<TranscriptRoute> => {
+    return turnQueue.current!.enqueue(transcript);
+  }, []);
+
+  const handleSessionActiveChange = useCallback((active: boolean) => {
+    if (active) turnQueue.current?.start();
+    else turnQueue.current?.stop();
+  }, []);
+
+  const handleRunStarted = useCallback(() => {
+    markRunStarted();
+  }, [markRunStarted]);
+
+  const handleRunFinished = useCallback((requestId: number) => {
+    runInFlight.current = false;
+    setRunAnnouncement("Test run completed.");
+    runWaiters.current.get(requestId)?.();
+    runWaiters.current.delete(requestId);
+    turnQueue.current?.resume();
+  }, []);
 
   const resetSource = () => {
     const confirmed = window.confirm(
@@ -146,7 +197,7 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
       return;
     }
 
-    setEditorStates((current) => ({ ...current, [selectedId]: createEditorActionState(challenge.starterCode) }));
+    updateChallengeState(selectedId, () => createEditorActionState(challenge.starterCode));
     setEditorRevisions((current) => ({ ...current, [selectedId]: current[selectedId] + 1 }));
   };
 
@@ -166,7 +217,11 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
           <select
             id="challenge-select"
             value={selectedId}
-            onChange={(event) => setSelectedId(event.target.value as ChallengeId)}
+            onChange={(event) => {
+              const nextId = event.target.value as ChallengeId;
+              selectedIdRef.current = nextId;
+              setSelectedId(nextId);
+            }}
           >
             {challenges.map((candidate) => (
               <option key={candidate.id} value={candidate.id}>
@@ -212,6 +267,7 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
       {editorState.error ? <p className="action-error" role="alert">{editorState.error}</p> : null}
 
       {isRequestingProposal ? <p className="proposal-status" role="status">Creating AI proposal…</p> : null}
+      {editorState.pendingProposal ? <p role="status">AI proposal ready to review.</p> : null}
       {editorState.pendingProposal ? (
         <ProposalReview
           proposal={editorState.pendingProposal}
@@ -224,6 +280,8 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
         challenge={challenge}
         source={editorState.source}
         runRequests={editorState.runRequests}
+        onRunStarted={handleRunStarted}
+        onRunFinished={handleRunFinished}
       />
 
       <VoiceSession
@@ -238,6 +296,8 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
         hasPendingProposal={Boolean(editorState.pendingProposal)}
         lastTranscript={lastTranscript}
         onCompletedTranscript={handleCompletedTranscript}
+        onSessionActiveChange={handleSessionActiveChange}
+        announcement={runAnnouncement}
       />
     </main>
   );

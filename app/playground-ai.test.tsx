@@ -23,9 +23,14 @@ vi.mock("./python-test-runner", () => ({ PythonTestRunner: () => null }));
 
 vi.mock("./voice-session", () => ({
   VoiceSession: ({ onCompletedTranscript }: { onCompletedTranscript: (transcript: { id: string; text: string }) => void }) => (
-    <button type="button" onClick={() => onCompletedTranscript({ id: "change-1", text: "change use a dictionary" })}>
-      Request AI change
-    </button>
+    <>
+      <button type="button" onClick={() => onCompletedTranscript({ id: "change-1", text: "change use a dictionary" })}>
+        Request AI change
+      </button>
+      <button type="button" onClick={() => onCompletedTranscript({ id: "dictation-1", text: "type pass" })}>
+        Dictate pass
+      </button>
+    </>
   ),
 }));
 
@@ -69,5 +74,15 @@ describe("AI proposals in the playground", () => {
     expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
       "FUNC pair_sum(nums, target):\n    # Return the two matching indices.\n    return []",
     );
+  });
+
+  it("accepts a completed transcript identifier only once", async () => {
+    render(<Playground voiceMode="realtime" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Dictate pass" }));
+    await waitFor(() => expect((screen.getByRole("textbox", { name: "Python code editor" }) as HTMLTextAreaElement).value).toContain("pass"));
+    fireEvent.click(screen.getByRole("button", { name: "Dictate pass" }));
+
+    expect((screen.getByRole("textbox", { name: "Python code editor" }) as HTMLTextAreaElement).value.match(/pass/g)).toHaveLength(1);
   });
 });

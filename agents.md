@@ -1,5 +1,33 @@
 # Handoff notes
 
+## Latest handoff — T-009 implementation
+
+T-009 is implemented and committed in this handoff. `app/completed-turn-queue.ts` records each
+completed transcript identifier before classifying it, accepts it only once, serializes non-Stop
+turns, and clears queued work immediately on Stop. `app/playground.tsx` routes queued turns through
+the existing shared dispatcher; a voice Run awaits its matching Python worker result before the
+next queued turn can mutate state. AI requests are also awaited. `app/voice-session.tsx` retains
+the requested session across one-utterance recording/transcription and automatically re-arms the
+recording client after handling a non-Stop turn. Realtime stays in its existing listening state.
+Accessible status now announces pending proposals and test start/completion, while existing live
+voice status and alerts announce listening and errors.
+
+## Verification
+
+On 2026-07-17, `npm run typecheck`, `npm run lint`, `npm test` (91 tests), and `npm run build`
+passed. `app/completed-turn-queue.test.ts` covers duplicate IDs both before and after their original
+turn, ordered serialization while busy, and Stop clearing queued mutations. The playground test
+also proves a repeated completed transcript changes the editor only once.
+
+## Hiccups and next task
+
+`npm run test:e2e` could not complete in this environment because port 3000 was occupied by an
+already-running Next dev server serving Next's “missing required error components, refreshing”
+recovery page. Playwright could neither reuse that unhealthy server nor start a replacement, which
+timed out waiting for the configured web server. Restart the existing dev server (or free port
+3000) and rerun `npm run test:e2e` before claiming the task's full UI quality gate. The next
+highest-priority item after that confirmation is T-010.
+
 ## Current state
 
 T-005 is complete and committed in this handoff. `app/workers/python.worker.ts` loads Pyodide as a browser-only module inside a dedicated worker, runs the editable `solution.py` plus only the selected challenge's bundled tests, captures output, and returns structured completed or error responses. Assertion failures become named failed tests; syntax and runtime failures return a Python type and message.

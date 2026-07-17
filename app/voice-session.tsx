@@ -7,6 +7,7 @@ import {
   type RealtimeSessionState,
 } from "./realtime-transcription-client";
 import { MediaRecorderTranscriptionClient } from "./media-recorder-transcription-client";
+import type { CompletedTurnReceipt } from "./completed-turn-queue";
 import type { TranscriptRoute } from "./transcript-router";
 
 const statusCopy: Record<RealtimeSessionState, string> = {
@@ -19,7 +20,7 @@ const statusCopy: Record<RealtimeSessionState, string> = {
 };
 
 type VoiceMode = "realtime" | "recording";
-type VoiceClient = Pick<RealtimeTranscriptionClient, "connect" | "disconnect" | "dispose">;
+type VoiceClient = Pick<RealtimeTranscriptionClient, "connect" | "disconnect" | "dispose" | "getState">;
 
 interface VoiceSessionProps {
   readonly mode?: VoiceMode;
@@ -32,7 +33,9 @@ interface VoiceSessionProps {
   readonly canRedo?: boolean;
   readonly hasPendingProposal?: boolean;
   readonly lastTranscript?: { readonly text: string; readonly interpretation: string };
-  readonly onCompletedTranscript?: (transcript: CompletedTranscript) => TranscriptRoute;
+  readonly onCompletedTranscript?: (transcript: CompletedTranscript) => CompletedTurnReceipt<TranscriptRoute>;
+  readonly onSessionActiveChange?: (active: boolean) => void;
+  readonly announcement?: string;
 }
 
 export function VoiceSession({
@@ -47,8 +50,15 @@ export function VoiceSession({
   hasPendingProposal = false,
   lastTranscript,
   onCompletedTranscript,
+  onSessionActiveChange,
+  announcement,
 }: VoiceSessionProps) {
   const client = useRef<VoiceClient | null>(null);
+  const sessionWanted = useRef(false);
+  const onCompletedTranscriptRef = useRef(onCompletedTranscript);
+  const onSessionActiveChangeRef = useRef(onSessionActiveChange);
+  onCompletedTranscriptRef.current = onCompletedTranscript;
+  onSessionActiveChangeRef.current = onSessionActiveChange;
   const [state, setState] = useState<RealtimeSessionState>("idle");
   const [error, setError] = useState<string>();
   const [transcripts, setTranscripts] = useState<CompletedTranscript[]>([]);
@@ -59,27 +69,59 @@ export function VoiceSession({
       onStateChange: (nextState, nextError) => {
         setState(nextState);
         setError(nextError);
+        if (nextState === "error") {
+          sessionWanted.current = false;
+          onSessionActiveChangeRef.current?.(false);
+        }
       },
       onTranscript: (transcript) => {
         setTranscripts((current) => [transcript, ...current].slice(0, 3));
-        const route = onCompletedTranscript?.(transcript);
-        if (route?.kind === "control" && route.command === "stopListening") {
+        const receipt = onCompletedTranscriptRef.current?.(transcript);
+        if (receipt?.stop) {
+          sessionWanted.current = false;
+          onSessionActiveChangeRef.current?.(false);
           transcriptionClient.disconnect();
+          return;
+        }
+        if (mode === "recording" && receipt) {
+          void receipt.completed.finally(() => {
+            if (sessionWanted.current && transcriptionClient.getState() === "idle") void transcriptionClient.connect();
+          });
         }
       },
     });
     client.current = transcriptionClient;
 
-    return () => transcriptionClient.dispose();
-  }, [mode, onCompletedTranscript]);
+    return () => {
+      sessionWanted.current = false;
+      onSessionActiveChangeRef.current?.(false);
+      transcriptionClient.dispose();
+    };
+  }, [mode]);
+
+  const beginSession = () => {
+    sessionWanted.current = true;
+    onSessionActiveChangeRef.current?.(true);
+    void client.current?.connect();
+  };
+
+  const endSession = () => {
+    sessionWanted.current = false;
+    onSessionActiveChangeRef.current?.(false);
+    client.current?.disconnect();
+  };
 
   const toggleListening = () => {
     if (state === "listening" || state === "connecting") {
-      client.current?.disconnect();
+      if (mode === "recording" && state === "listening") {
+        client.current?.disconnect();
+      } else {
+        endSession();
+      }
       return;
     }
 
-    void client.current?.connect();
+    beginSession();
   };
 
   const isListening = state === "listening" || state === "connecting";
@@ -99,6 +141,7 @@ export function VoiceSession({
         <div>
           <p className="eyebrow">Voice session · {state}</p>
           <p>{error ?? statusCopy[state]}</p>
+          {announcement ? <p role="status">{announcement}</p> : null}
           {lastTranscript ? (
             <p className="transcript-interpretation">
               Heard: {lastTranscript.text} · Interpreted: {lastTranscript.interpretation}
