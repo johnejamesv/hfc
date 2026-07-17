@@ -1,5 +1,20 @@
 # Handoff notes
 
+## Latest handoff — T-009 quality-gate retry (blocked)
+
+T-009's implementation remains unchanged. A fresh retry on 2026-07-17 confirmed that a
+cleaned `.next` cache lets `next dev --hostname 127.0.0.1` report ready on port 3000 in
+10.4 seconds, but the first request triggers a long cold App Router compilation. The
+terminal wrapper terminates foreground commands at about 64 seconds, before Playwright can
+finish the mobile smoke test. Repeated attempts at the focused browser check, full browser
+suite, full lint, focused ESLint, and focused Vitest all hit that host-side foreground cap
+without reporting an application or test failure. `npm run typecheck` completed successfully.
+
+Run the quality gates from a session that permits a foreground command longer than one minute
+before marking T-009 fully verified. The prior implementation handoff documents passing
+typecheck, lint, unit, and build results; only the clean browser rerun was outstanding before
+this retry. The pre-existing untracked `hfc-local-qr.png` was left untouched.
+
 ## Latest handoff — T-009 implementation
 
 T-009 is implemented and committed in this handoff. `app/completed-turn-queue.ts` records each
