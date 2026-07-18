@@ -322,10 +322,10 @@ Safari installation and standalone-layout verification remain part of T-011's de
 
 ### T-011 — Harden and verify the complete demo flow
 
-- [ ] Add an e2e test for challenge selection, deterministic editing, AI proposal review, Apply, and test execution using mocked OpenAI responses.
-- [ ] Add failure-path coverage for denied microphone permission, Realtime credential or
+- [x] Add an e2e test for challenge selection, deterministic editing, AI proposal review, Apply, and test execution using mocked OpenAI responses.
+- [x] Add failure-path coverage for denied microphone permission, Realtime credential or
       negotiation failure, AI request failure, malformed AI output, and Python timeout.
-- [ ] Verify responsive behavior with Playwright WebKit at the target viewport.
+- [x] Verify responsive behavior with Playwright WebKit at the target viewport.
 - [ ] Run the rehearsed flow repeatedly on the physical iPhone.
 - [ ] Record the final device, iOS version, browser, model configuration, and known limitations.
 
@@ -338,7 +338,14 @@ Acceptance:
 
 Prerequisites: T-009 and T-010.
 
-Evidence: pending.
+Evidence: Automated verification is complete: `e2e/smoke.spec.ts` now mocks the browser
+Realtime boundary and edit response, drives completed voice turns through select/change/review/
+Apply/Run/Stop, and observes the real Python worker pass the challenge tests at the 390×844
+mobile-WebKit viewport. Existing focused client and route tests cover microphone permission,
+credential/negotiation, AI-request/malformed-output, and worker-timeout recovery paths. On
+2026-07-18, `npm run typecheck`, `npm run lint`, and `npm test` (100 tests) passed; the focused
+browser rehearsal also passed. Physical-iPhone repetitions and final device/model details remain
+required manual verification and are intentionally not represented as completed.
 
 ### T-012 — Prepare the public hackathon repository
 
