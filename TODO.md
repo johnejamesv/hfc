@@ -285,9 +285,8 @@ fallback re-arms automatically after a completed turn while the requested sessio
 `app/completed-turn-queue.test.ts` covers before/during/after duplicate delivery, arrival-order
 serialization, and Stop clearing queued turns; the playground test proves a duplicate completed
 turn changes the document once. On 2026-07-17, `npm run typecheck`, `npm run lint`, `npm test`
-(91 tests), and `npm run build` passed. `npm run test:e2e` needs a clean rerun: port 3000 was
-occupied by an existing Next dev server returning its “missing required error components” recovery
-page, and Playwright's replacement server timed out waiting for that port.
+(91 tests), and `npm run build` passed. On 2026-07-18, a fresh `next dev` instance and the
+mobile-WebKit `npm run test:e2e` suite passed (2 tests, including the real Pyodide run).
 
 ## P1: Demo completeness
 
