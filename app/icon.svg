@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title>Hands-Free Code</title>
+  <rect width="512" height="512" rx="112" fill="#07110f"/>
+  <path d="M112 128h80v96h128v-96h80v256h-80v-96H192v96h-80z" fill="#6fffc1"/>
+</svg>

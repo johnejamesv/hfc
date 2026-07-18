@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getChallenge } from "./challenges";
 import Home from "./page";
@@ -16,6 +16,7 @@ vi.mock("./code-editor", () => ({
 describe("Home", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    window.localStorage.clear();
   });
 
   it("renders the mobile playground shell", () => {
@@ -83,5 +84,26 @@ describe("Home", () => {
     expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
       getChallenge("pair-sum").starterCode,
     );
+  });
+
+  it("restores the selected challenge and each saved source after a reload", async () => {
+    const first = render(<Home />);
+    const selector = screen.getByRole("combobox", { name: "Challenge" });
+    fireEvent.change(screen.getByRole("textbox", { name: "Python code editor" }), {
+      target: { value: "# saved pair solution" },
+    });
+    fireEvent.change(selector, { target: { value: "vowel-count" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Python code editor" }), {
+      target: { value: "# saved vowel solution" },
+    });
+
+    await waitFor(() => expect(window.localStorage.getItem("hfc-progress")).toContain("saved vowel solution"));
+    first.unmount();
+    render(<Home />);
+
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Challenge" })).toHaveValue("vowel-count"));
+    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue("# saved vowel solution");
+    fireEvent.change(screen.getByRole("combobox", { name: "Challenge" }), { target: { value: "pair-sum" } });
+    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue("# saved pair solution");
   });
 });

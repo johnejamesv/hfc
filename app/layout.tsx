@@ -5,6 +5,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "HFC — Voice-first Python playground",
   description: "Solve focused Python challenges by speaking code and commands.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "HFC",
+  },
+  icons: { apple: "/icon.svg" },
 };
 
 export const viewport: Viewport = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { challenges, getChallenge, type ChallengeId } from "./challenges";
 import { CodeEditor } from "./code-editor";
 import { createEditorActionState, dispatchEditorAction, type EditorAction, type EditorActionState, type TextRange } from "./editor-actions";
@@ -12,6 +12,7 @@ import { VoiceSession } from "./voice-session";
 import { describeTranscriptRoute, editorActionForTranscriptRoute, routeTranscript, type TranscriptRoute } from "./transcript-router";
 import type { CompletedTranscript } from "./realtime-transcription-client";
 import { CompletedTurnQueue, type CompletedTurnReceipt } from "./completed-turn-queue";
+import { readProgress, writeProgress } from "./persistence";
 
 type VoiceMode = "realtime" | "recording";
 type ChallengeEditorStates = Record<ChallengeId, EditorActionState>;
@@ -39,6 +40,7 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
   const [lastTranscript, setLastTranscript] = useState<LastTranscript>();
   const [isRequestingProposal, setIsRequestingProposal] = useState(false);
   const [runAnnouncement, setRunAnnouncement] = useState<string>();
+  const [persistenceReady, setPersistenceReady] = useState(false);
   const editorStatesRef = useRef(editorStates);
   const selectedIdRef = useRef(selectedId);
   const proposalInFlight = useRef(false);
@@ -48,6 +50,31 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
   const turnQueue = useRef<CompletedTurnQueue<TranscriptRoute> | undefined>(undefined);
   const challenge = getChallenge(selectedId);
   const editorState = editorStates[selectedId];
+
+  useEffect(() => {
+    const restored = readProgress(window.localStorage);
+    if (restored) {
+      const nextStates = { ...editorStatesRef.current };
+      for (const challenge of challenges) {
+        const source = restored.solutions[challenge.id];
+        if (source !== undefined) nextStates[challenge.id] = createEditorActionState(source);
+      }
+      editorStatesRef.current = nextStates;
+      selectedIdRef.current = restored.selectedId;
+      setEditorStates(nextStates);
+      setSelectedId(restored.selectedId);
+    }
+    setPersistenceReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!persistenceReady) return;
+    const solutions = challenges.reduce<Record<ChallengeId, string>>((current, candidate) => {
+      current[candidate.id] = editorStates[candidate.id].source;
+      return current;
+    }, {} as Record<ChallengeId, string>);
+    writeProgress(window.localStorage, selectedId, solutions);
+  }, [editorStates, persistenceReady, selectedId]);
 
   if (!turnQueue.current) {
     turnQueue.current = new CompletedTurnQueue({

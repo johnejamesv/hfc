@@ -292,11 +292,11 @@ mobile-WebKit `npm run test:e2e` suite passed (2 tests, including the real Pyodi
 
 ### T-010 — Add persistence and installable PWA behavior
 
-- [ ] Persist the selected challenge and each solution in versioned local storage.
-- [ ] Recover safely from invalid or outdated stored data.
-- [ ] Add the web app manifest, icons, theme metadata, and standalone layout behavior.
-- [ ] Respect iPhone safe-area insets and 44-pixel minimum primary touch targets.
-- [ ] Avoid storing credentials, audio, or transcripts persistently.
+- [x] Persist the selected challenge and each solution in versioned local storage.
+- [x] Recover safely from invalid or outdated stored data.
+- [x] Add the web app manifest, icons, theme metadata, and standalone layout behavior.
+- [x] Respect iPhone safe-area insets and 44-pixel minimum primary touch targets.
+- [x] Avoid storing credentials, audio, or transcripts persistently.
 
 Acceptance:
 
@@ -310,7 +310,15 @@ Acceptance:
 
 Prerequisites: T-003 and T-004.
 
-Evidence: pending.
+Evidence: `app/persistence.ts` stores only schema-versioned selected-challenge and per-challenge
+source strings under `hfc-progress`; its decoder rejects malformed, obsolete, and incorrectly
+shaped records while retaining valid known challenge sources where safe. `app/manifest.ts`,
+`app/icon.svg`, layout metadata, and the existing safe-area/touch-target CSS provide installable
+standalone PWA metadata without persisting credentials, audio, or transcripts. On 2026-07-18,
+`npm run typecheck`, `npm run lint`, `npm test` (100 tests), `npm run build`, and the two-test
+mobile-WebKit `npm run test:e2e` suite passed. `persistence.test.ts`, the playground reload test,
+and `manifest.test.ts` cover round trips, invalid storage, and manifest declarations. Physical
+Safari installation and standalone-layout verification remain part of T-011's device handoff.
 
 ### T-011 — Harden and verify the complete demo flow
 
