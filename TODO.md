@@ -349,12 +349,12 @@ required manual verification and are intentionally not represented as completed.
 
 ### T-012 — Prepare the public hackathon repository
 
-- [ ] Add an MIT license.
-- [ ] Write a concise README with the problem, product boundary, architecture, setup, environment variables, screenshots, and demo script.
-- [ ] Credit dependencies and state that bundled challenges are original.
-- [ ] Add a short architecture diagram and limitations section.
-- [ ] Audit tracked files and git history for credentials and private material.
-- [ ] Document how to run each quality gate.
+- [x] Add an MIT license.
+- [x] Write a concise README with the problem, product boundary, architecture, setup, environment variables, screenshots, and demo script.
+- [x] Credit dependencies and state that bundled challenges are original.
+- [x] Add a short architecture diagram and limitations section.
+- [x] Audit tracked files and git history for credentials and private material.
+- [x] Document how to run each quality gate.
 
 Acceptance:
 
@@ -365,7 +365,14 @@ Acceptance:
 
 Prerequisites: T-011.
 
-Evidence: pending.
+Evidence: `README.md` documents the bounded product, setup, environment variables, demo,
+quality gates, original challenges, dependencies, Mermaid architecture, limitations, and a
+current iPhone-sized WebKit screenshot; `LICENSE` is MIT. A tracked-file audit plus an
+all-history credential-pattern scan found no credential values or generated audio/private
+material (the only local QR image remains untracked). On 2026-07-18, the complete pre-clean
+quality pass succeeded: typecheck, lint, 100 unit tests, production build, and all three
+mobile-WebKit e2e tests. A subsequent `npm ci` completed with zero vulnerabilities; physical
+iPhone validation remains intentionally outstanding in T-011.
 
 ## Completion condition
 
