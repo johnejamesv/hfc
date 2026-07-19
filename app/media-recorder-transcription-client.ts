@@ -2,6 +2,7 @@ import {
   type CompletedTranscript,
   type RealtimeSessionState,
 } from "./realtime-transcription-client";
+import { getMicrophoneStream } from "./microphone-capture";
 
 type RecorderDataEvent = { data: Blob };
 
@@ -85,7 +86,7 @@ export class MediaRecorderTranscriptionClient {
         return new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       });
     this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
-    this.getUserMedia = options.getUserMedia ?? (() => navigator.mediaDevices.getUserMedia({ audio: true }));
+    this.getUserMedia = options.getUserMedia ?? getMicrophoneStream;
     this.onStateChange = options.onStateChange;
     this.onTranscript = options.onTranscript;
     this.transcriptionEndpoint = options.transcriptionEndpoint ?? DEFAULT_TRANSCRIPTION_ENDPOINT;

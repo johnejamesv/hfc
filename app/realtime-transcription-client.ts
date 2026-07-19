@@ -1,3 +1,5 @@
+import { getMicrophoneStream } from "./microphone-capture";
+
 export type RealtimeSessionState =
   | "idle"
   | "connecting"
@@ -63,7 +65,7 @@ export class RealtimeTranscriptionClient {
     // Safari requires Window.fetch to be invoked with Window as its receiver.
     // Keeping the bare function and calling it later loses that receiver.
     this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
-    this.getUserMedia = options.getUserMedia ?? (() => navigator.mediaDevices.getUserMedia({ audio: true }));
+    this.getUserMedia = options.getUserMedia ?? getMicrophoneStream;
     this.onStateChange = options.onStateChange;
     this.onTranscript = options.onTranscript;
     this.realtimeEndpoint = options.realtimeEndpoint ?? DEFAULT_REALTIME_ENDPOINT;

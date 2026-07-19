@@ -48,6 +48,12 @@ npm run dev
 Open <http://localhost:3000>. On macOS or Linux, copy the environment template with
 `cp .env.example .env.local` instead.
 
+To use the microphone from an iPhone or another device, open the app through a trusted
+`https://` URL. A LAN URL such as `http://192.168.x.x:3000` can render the app, but mobile
+browsers do not expose microphone capture on that insecure origin. For local HTTPS,
+Next.js supports `npm run dev -- --experimental-https`; the generated certificate must also
+be trusted by the phone. A trusted HTTPS deployment or tunnel avoids device-certificate setup.
+
 ### Environment variables
 
 Set these in `.env.local`; do not use a `NEXT_PUBLIC_` prefix for secrets.
