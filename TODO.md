@@ -338,14 +338,15 @@ Acceptance:
 
 Prerequisites: T-009 and T-010.
 
-Evidence: Automated verification is complete: `e2e/smoke.spec.ts` now mocks the browser
-Realtime boundary and edit response, drives completed voice turns through select/change/review/
-Apply/Run/Stop, and observes the real Python worker pass the challenge tests at the 390×844
-mobile-WebKit viewport. Existing focused client and route tests cover microphone permission,
-credential/negotiation, AI-request/malformed-output, and worker-timeout recovery paths. On
-2026-07-18, `npm run typecheck`, `npm run lint`, and `npm test` (100 tests) passed; the focused
-browser rehearsal also passed. Physical-iPhone repetitions and final device/model details remain
-required manual verification and are intentionally not represented as completed.
+Evidence: Automated verification is complete. On 2026-07-20, the retained browser matrix injected
+completed transcript turns after a mocked WebRTC boundary while preserving the real router, queue,
+editor dispatcher, proposal client/UI, and Pyodide worker. It covered deterministic editing,
+deduplication, persistence, AI rejection/Discard/Apply/malformed output, queue ordering and Stop
+priority, all three challenge suites, syntax/runtime/timeout recovery, and three consecutive
+transcript-only primary rehearsals. `npm run typecheck`, `npm run lint`, `npm test` (103 tests),
+`npm run build`, and all 16 Playwright cases passed across 390×844 mobile WebKit and desktop
+Chromium. Microphone capture/transcription was outside this run; physical-iPhone repetitions and
+final device/model details remain required manual verification and are intentionally unchecked.
 
 ### T-012 — Prepare the public hackathon repository
 

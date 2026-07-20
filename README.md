@@ -66,6 +66,7 @@ Set these in `.env.local`; do not use a `NEXT_PUBLIC_` prefix for secrets.
 | `OPENAI_TRANSCRIPTION_MODEL` | Optional transcription model for the audio fallback. |
 | `OPENAI_EDIT_MODEL` | Optional Responses API model for targeted edits. |
 | `HFC_EDIT_ADAPTER=mock` | Uses deterministic local edit proposals without an API key. |
+| `HFC_VOICE_MODE` | Optional `realtime` or `recording` override; otherwise inferred from the provider key. |
 | `OPENROUTER_API_KEY` | Selects the one-utterance MediaRecorder fallback for transcription. |
 | `OPENROUTER_TRANSCRIPTION_MODEL` | Optional OpenRouter transcription model for that fallback. |
 

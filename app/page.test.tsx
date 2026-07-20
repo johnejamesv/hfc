@@ -33,6 +33,28 @@ describe("Home", () => {
     expect(screen.getByText("Literal dictation vocabulary")).toBeInTheDocument();
   });
 
+  it("honors an explicit voice transport instead of provider-key inference", () => {
+    const originalMode = process.env.HFC_VOICE_MODE;
+    const originalOpenRouterKey = process.env.OPENROUTER_API_KEY;
+
+    try {
+      process.env.OPENROUTER_API_KEY = "configured-openrouter-key";
+      process.env.HFC_VOICE_MODE = "realtime";
+      const realtime = render(<Home />);
+      expect(screen.getByRole("button", { name: "Start listening" })).toBeInTheDocument();
+      realtime.unmount();
+
+      process.env.HFC_VOICE_MODE = "recording";
+      render(<Home />);
+      expect(screen.getByRole("button", { name: "Record one phrase" })).toBeInTheDocument();
+    } finally {
+      if (originalMode === undefined) delete process.env.HFC_VOICE_MODE;
+      else process.env.HFC_VOICE_MODE = originalMode;
+      if (originalOpenRouterKey === undefined) delete process.env.OPENROUTER_API_KEY;
+      else process.env.OPENROUTER_API_KEY = originalOpenRouterKey;
+    }
+  });
+
   it("retains each challenge source while switching between all three challenges", () => {
     render(<Home />);
 
