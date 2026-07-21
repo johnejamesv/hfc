@@ -23,8 +23,13 @@ describe("transcript router", () => {
     ["discard", { kind: "control", command: "discard" }],
     ["stop listening", { kind: "control", command: "stopListening" }],
     ["go to line 3", { kind: "edit", command: { type: "goToLine", line: 3 } }],
+    ["go to line second", { kind: "edit", command: { type: "goToLine", line: 2 } }],
     ["select line 3", { kind: "edit", command: { type: "selectLine", line: 3 } }],
+    ["select line three", { kind: "edit", command: { type: "selectLine", line: 3 } }],
+    ["select line twenty-one", { kind: "edit", command: { type: "selectLine", line: 21 } }],
     ["select lines 2 through 3", { kind: "edit", command: { type: "selectLines", fromLine: 2, toLine: 3 } }],
+    ["select lines one through 3", { kind: "edit", command: { type: "selectLines", fromLine: 1, toLine: 3 } }],
+    ["select lines first through third", { kind: "edit", command: { type: "selectLines", fromLine: 1, toLine: 3 } }],
     ["indent", { kind: "edit", command: { type: "indent" } }],
     ["indent once", { kind: "edit", command: { type: "indent" } }],
     ["outdent", { kind: "edit", command: { type: "outdent" } }],
@@ -49,6 +54,7 @@ describe("transcript router", () => {
     "please run tests",
     "run tests now",
     "select the line 2",
+    "select line banana",
     "select lines 2 to 3",
     "indent twice",
     "delete the selection",
@@ -57,6 +63,10 @@ describe("transcript router", () => {
     "typewriter",
   ])("keeps added words and unsupported synonyms unknown: %s", (transcript) => {
     expect(routeTranscript(transcript)).toEqual({ kind: "unknown" });
+  });
+
+  it("does not rewrite number words inside literal dictation", () => {
+    expect(routeTranscript("type line three")).toEqual({ kind: "dictation", content: "line three" });
   });
 });
 
@@ -82,7 +92,7 @@ describe("routed editor actions", () => {
     });
   });
 
-  it.each(["go to line 0", "go to line -1", "select lines 3 through 2", "select line 4"]) (
+  it.each(["go to line 0", "go to line zero", "go to line -1", "select lines three through two", "select line four"]) (
     "reports invalid line input without changing source or selection: %s",
     (transcript) => {
       const before = stateWithSelection({ from: 4, to: 7 });

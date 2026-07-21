@@ -309,6 +309,16 @@ h2 {
   background: var(--accent);
   color: var(--accent-ink);
   box-shadow: 0 0 0 0.4rem rgb(111 255 193 / 10%);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.microphone-button[data-recording="true"] {
+  background: #ff6478;
+  color: #27040a;
+  box-shadow: 0 0 0 0.4rem rgb(255 100 120 / 16%);
 }
 
 .microphone-button span {

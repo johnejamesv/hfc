@@ -28,6 +28,70 @@ const controls: Record<string, ControlCommand> = {
   "stop listening": "stopListening",
 };
 
+const smallNumberWords: Readonly<Record<string, number>> = {
+  zero: 0,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  thirteen: 13,
+  fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  seventeen: 17,
+  eighteen: 18,
+  nineteen: 19,
+};
+
+const tensNumberWords: Readonly<Record<string, number>> = {
+  twenty: 20,
+  thirty: 30,
+  forty: 40,
+  fifty: 50,
+  sixty: 60,
+  seventy: 70,
+  eighty: 80,
+  ninety: 90,
+};
+
+const ordinalNumberWords: Readonly<Record<string, number>> = {
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+  sixth: 6,
+  seventh: 7,
+  eighth: 8,
+  ninth: 9,
+  tenth: 10,
+  eleventh: 11,
+  twelfth: 12,
+  thirteenth: 13,
+  fourteenth: 14,
+  fifteenth: 15,
+  sixteenth: 16,
+  seventeenth: 17,
+  eighteenth: 18,
+  nineteenth: 19,
+  twentieth: 20,
+  thirtieth: 30,
+  fortieth: 40,
+  fiftieth: 50,
+  sixtieth: 60,
+  seventieth: 70,
+  eightieth: 80,
+  ninetieth: 90,
+};
+
 /** Normalizes only the comparison form. The caller retains the original transcript for display. */
 export function normalizeTranscriptForRouting(transcript: string): string {
   return transcript.trim().replace(/\s+/g, " ").replace(/[.,!?]+$/, "").trim().toLowerCase();
@@ -42,19 +106,26 @@ export function routeTranscript(transcript: string): TranscriptRoute {
   const control = controls[normalized];
   if (control) return { kind: "control", command: control };
 
-  const lineCommand = normalized.match(/^go to line (-?\d+)$/);
-  if (lineCommand) return { kind: "edit", command: { type: "goToLine", line: Number(lineCommand[1]) } };
-
-  const selectLinesCommand = normalized.match(/^select lines (-?\d+) through (-?\d+)$/);
-  if (selectLinesCommand) {
-    return {
-      kind: "edit",
-      command: { type: "selectLines", fromLine: Number(selectLinesCommand[1]), toLine: Number(selectLinesCommand[2]) },
-    };
+  const lineCommand = normalized.match(/^go to line (.+)$/);
+  if (lineCommand) {
+    const line = parseSpokenLineNumber(lineCommand[1]);
+    if (line !== undefined) return { kind: "edit", command: { type: "goToLine", line } };
   }
 
-  const selectLineCommand = normalized.match(/^select line (-?\d+)$/);
-  if (selectLineCommand) return { kind: "edit", command: { type: "selectLine", line: Number(selectLineCommand[1]) } };
+  const selectLinesCommand = normalized.match(/^select lines (.+) through (.+)$/);
+  if (selectLinesCommand) {
+    const fromLine = parseSpokenLineNumber(selectLinesCommand[1]);
+    const toLine = parseSpokenLineNumber(selectLinesCommand[2]);
+    if (fromLine !== undefined && toLine !== undefined) {
+      return { kind: "edit", command: { type: "selectLines", fromLine, toLine } };
+    }
+  }
+
+  const selectLineCommand = normalized.match(/^select line (.+)$/);
+  if (selectLineCommand) {
+    const line = parseSpokenLineNumber(selectLineCommand[1]);
+    if (line !== undefined) return { kind: "edit", command: { type: "selectLine", line } };
+  }
 
   if (normalized === "indent" || normalized === "indent once") return { kind: "edit", command: { type: "indent" } };
   if (normalized === "outdent" || normalized === "outdent once") return { kind: "edit", command: { type: "outdent" } };
@@ -128,6 +199,21 @@ export function describeTranscriptRoute(route: TranscriptRoute): string {
 
 function removeCue(transcript: string, cue: string): string {
   return transcript.trim().replace(new RegExp(`^${cue}(?:\\s+|$)`, "i"), "");
+}
+
+/** Parses only the bounded number slot in line commands; literal dictation remains untouched. */
+function parseSpokenLineNumber(value: string): number | undefined {
+  if (/^-?\d+$/.test(value)) return Number(value);
+
+  const words = value.replace(/-/g, " ").trim().split(/\s+/);
+  if (words.length === 1) {
+    return smallNumberWords[words[0]] ?? tensNumberWords[words[0]] ?? ordinalNumberWords[words[0]];
+  }
+  if (words.length !== 2) return undefined;
+
+  const tens = tensNumberWords[words[0]];
+  const unit = smallNumberWords[words[1]] ?? ordinalNumberWords[words[1]];
+  return tens !== undefined && unit !== undefined && unit >= 1 && unit <= 9 ? tens + unit : undefined;
 }
 
 function controlAction(command: ControlCommand): EditorAction | undefined {

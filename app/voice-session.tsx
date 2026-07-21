@@ -174,6 +174,8 @@ export function VoiceSession({
           type="button"
           className="microphone-button"
           aria-label={microphoneLabel}
+          aria-pressed={isListening}
+          data-recording={isListening}
           onClick={toggleListening}
           disabled={isTranscribing}
         >

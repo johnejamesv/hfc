@@ -179,7 +179,7 @@ test("repairs an incorrect primary solution and solves both challenges through t
   const selector = page.getByRole("combobox", { name: "Challenge" });
   const editor = page.getByRole("textbox", { name: "Python code editor" });
 
-  await emitTranscript(page, "duplicate-line", "select line 3");
+  await emitTranscript(page, "duplicate-line", "select line three");
   await emitTranscript(
     page,
     "duplicate-wrong-solution",
@@ -190,7 +190,7 @@ test("repairs an incorrect primary solution and solves both challenges through t
   await expect(page.locator('li[data-status="failed"]')).toHaveCount(3, { timeout: 90_000 });
   await expect(page.locator('li[data-status="failed"]').filter({ hasText: "finds a separated duplicate" })).toBeVisible();
 
-  await emitTranscript(page, "duplicate-correction-line", "select line 3");
+  await emitTranscript(page, "duplicate-correction-line", "select line three");
   await emitTranscript(
     page,
     "duplicate-correct-solution",
@@ -202,7 +202,7 @@ test("repairs an incorrect primary solution and solves both challenges through t
   await expect(page.locator('li[data-status="passed"]').filter({ hasText: "finds a separated duplicate" })).toBeVisible();
 
   await selector.selectOption("valid-anagram");
-  await emitTranscript(page, "anagram-line", "select line 3");
+  await emitTranscript(page, "anagram-line", "select line three");
   await emitTranscript(
     page,
     "anagram-solution",

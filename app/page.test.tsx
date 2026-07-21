@@ -16,6 +16,7 @@ vi.mock("./code-editor", () => ({
 describe("Home", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     window.localStorage.clear();
   });
 
@@ -31,6 +32,21 @@ describe("Home", () => {
     expect(screen.getByRole("navigation", { name: "Editor controls" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Voice transcript status" })).toHaveTextContent("idle");
     expect(screen.getByText("Literal dictation vocabulary")).toBeInTheDocument();
+  });
+
+  it("marks the microphone as recording while a voice session connects", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)));
+    render(<Home />);
+
+    const idleMicrophone = screen.getByRole("button", { name: "Start listening" });
+    expect(idleMicrophone).toHaveAttribute("data-recording", "false");
+    expect(idleMicrophone).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(idleMicrophone);
+
+    const activeMicrophone = await screen.findByRole("button", { name: "Stop listening" });
+    expect(activeMicrophone).toHaveAttribute("data-recording", "true");
+    expect(activeMicrophone).toHaveAttribute("aria-pressed", "true");
   });
 
   it("honors an explicit voice transport instead of provider-key inference", () => {
