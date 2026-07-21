@@ -171,8 +171,8 @@ test("serializes delayed AI, Apply, and real Python Run, then gives Stop priorit
   expect(requestCount).toBe(2);
 });
 
-test("solves both primary challenges with deterministic transcript dictation", async ({ page }) => {
-  test.setTimeout(180_000);
+test("repairs an incorrect primary solution and solves both challenges through transcript commands", async ({ page }) => {
+  test.setTimeout(240_000);
   await installTranscriptTransport(page);
   await page.goto("/");
   await startTranscriptSession(page);
@@ -182,15 +182,24 @@ test("solves both primary challenges with deterministic transcript dictation", a
   await emitTranscript(page, "duplicate-line", "select line 3");
   await emitTranscript(
     page,
-    "duplicate-solution",
+    "duplicate-wrong-solution",
+    "type return len open paren nums close paren double equals len open paren set open paren nums close paren close paren",
+  );
+  await expect(editor).toContainText("return len(nums) == len(set(nums))");
+  await sendTranscript(page, "duplicate-wrong-run", "run tests");
+  await expect(page.locator('li[data-status="failed"]')).toHaveCount(3, { timeout: 90_000 });
+  await expect(page.locator('li[data-status="failed"]').filter({ hasText: "finds a separated duplicate" })).toBeVisible();
+
+  await emitTranscript(page, "duplicate-correction-line", "select line 3");
+  await emitTranscript(
+    page,
+    "duplicate-correct-solution",
     "type return len open paren nums close paren not equals len open paren set open paren nums close paren close paren",
   );
   await expect(editor).toContainText("return len(nums) != len(set(nums))");
-  await sendTranscript(page, "duplicate-run", "run tests");
-  await expect(page.getByRole("list", { name: "Test results" })).toContainText(
-    "finds a separated duplicate",
-    { timeout: 90_000 },
-  );
+  await sendTranscript(page, "duplicate-correct-run", "run tests");
+  await expect(page.locator('li[data-status="passed"]')).toHaveCount(3, { timeout: 90_000 });
+  await expect(page.locator('li[data-status="passed"]').filter({ hasText: "finds a separated duplicate" })).toBeVisible();
 
   await selector.selectOption("valid-anagram");
   await emitTranscript(page, "anagram-line", "select line 3");
@@ -201,10 +210,8 @@ test("solves both primary challenges with deterministic transcript dictation", a
   );
   await expect(editor).toContainText("return sorted(s) == sorted(t)");
   await sendTranscript(page, "anagram-run", "run tests");
-  await expect(page.getByRole("list", { name: "Test results" })).toContainText(
-    "accepts reordered characters",
-    { timeout: 90_000 },
-  );
+  await expect(page.locator('li[data-status="passed"]')).toHaveCount(3, { timeout: 90_000 });
+  await expect(page.locator('li[data-status="passed"]').filter({ hasText: "accepts reordered characters" })).toBeVisible();
 });
 
 test("runs every challenge and recovers after syntax, runtime, and timeout failures", async ({ page }) => {
