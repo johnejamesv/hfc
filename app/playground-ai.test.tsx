@@ -72,7 +72,7 @@ describe("AI proposals in the playground", () => {
 
     expect(screen.queryByRole("heading", { name: "Review before applying" })).not.toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
-      "FUNC pair_sum(nums, target):\n    # Return the two matching indices.\n    return []",
+      "FUNC contains_duplicate(nums):\n    # Check whether any value repeats.\n    return False",
     );
   });
 

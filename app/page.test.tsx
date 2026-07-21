@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getChallenge } from "./challenges";
+import { challenges, getChallenge } from "./challenges";
 import Home from "./page";
 
 vi.mock("./code-editor", () => ({
@@ -22,10 +22,10 @@ describe("Home", () => {
   it("renders the mobile playground shell", () => {
     render(<Home />);
 
-    expect(screen.getByRole("heading", { name: "Find a matching pair" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Challenge" })).toHaveValue("pair-sum");
+    expect(screen.getByRole("heading", { name: "Contains a duplicate" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Challenge" })).toHaveValue("contains-duplicate");
     expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
-      getChallenge("pair-sum").starterCode,
+      getChallenge("contains-duplicate").starterCode,
     );
     expect(screen.getByRole("button", { name: "Start listening" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Editor controls" })).toBeInTheDocument();
@@ -55,38 +55,25 @@ describe("Home", () => {
     }
   });
 
-  it("retains each challenge source while switching between all three challenges", () => {
+  it("retains each challenge source while switching between all challenges", () => {
     render(<Home />);
 
     const selector = screen.getByRole("combobox", { name: "Challenge" });
-    fireEvent.change(screen.getByRole("textbox", { name: "Python code editor" }), {
-      target: { value: "# custom pair solution" },
-    });
+    for (const challenge of challenges) {
+      fireEvent.change(selector, { target: { value: challenge.id } });
+      expect(screen.getByRole("heading", { name: challenge.title })).toBeInTheDocument();
+      expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(challenge.starterCode);
+      fireEvent.change(screen.getByRole("textbox", { name: "Python code editor" }), {
+        target: { value: `# custom ${challenge.id} solution` },
+      });
+    }
 
-    fireEvent.change(selector, { target: { value: "vowel-count" } });
-    expect(screen.getByRole("heading", { name: "Count the vowels" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
-      getChallenge("vowel-count").starterCode,
-    );
-    fireEvent.change(screen.getByRole("textbox", { name: "Python code editor" }), {
-      target: { value: "# custom vowel solution" },
-    });
-
-    fireEvent.change(selector, { target: { value: "steady-rises" } });
-    expect(screen.getByRole("heading", { name: "Measure steady rises" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
-      getChallenge("steady-rises").starterCode,
-    );
-
-    fireEvent.change(selector, { target: { value: "pair-sum" } });
-    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
-      "# custom pair solution",
-    );
-
-    fireEvent.change(selector, { target: { value: "vowel-count" } });
-    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
-      "# custom vowel solution",
-    );
+    for (const challenge of challenges) {
+      fireEvent.change(selector, { target: { value: challenge.id } });
+      expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
+        `# custom ${challenge.id} solution`,
+      );
+    }
   });
 
   it("cancels reset without changing the source and confirms before restoring starter code", () => {
@@ -104,7 +91,7 @@ describe("Home", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
     expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue(
-      getChallenge("pair-sum").starterCode,
+      getChallenge("contains-duplicate").starterCode,
     );
   });
 
@@ -112,7 +99,7 @@ describe("Home", () => {
     const first = render(<Home />);
     const selector = screen.getByRole("combobox", { name: "Challenge" });
     fireEvent.change(screen.getByRole("textbox", { name: "Python code editor" }), {
-      target: { value: "# saved pair solution" },
+      target: { value: "# saved duplicate solution" },
     });
     fireEvent.change(selector, { target: { value: "vowel-count" } });
     fireEvent.change(screen.getByRole("textbox", { name: "Python code editor" }), {
@@ -125,7 +112,7 @@ describe("Home", () => {
 
     await waitFor(() => expect(screen.getByRole("combobox", { name: "Challenge" })).toHaveValue("vowel-count"));
     expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue("# saved vowel solution");
-    fireEvent.change(screen.getByRole("combobox", { name: "Challenge" }), { target: { value: "pair-sum" } });
-    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue("# saved pair solution");
+    fireEvent.change(screen.getByRole("combobox", { name: "Challenge" }), { target: { value: "contains-duplicate" } });
+    expect(screen.getByRole("textbox", { name: "Python code editor" })).toHaveValue("# saved duplicate solution");
   });
 });

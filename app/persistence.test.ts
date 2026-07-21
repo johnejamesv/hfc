@@ -37,7 +37,7 @@ describe("challenge progress persistence", () => {
       selectedId: "not-a-challenge",
       solutions: { "pair-sum": "# retained", "vowel-count": 42, unknown: "ignored" },
     }))).toEqual({
-      selectedId: "pair-sum",
+      selectedId: "contains-duplicate",
       solutions: { "pair-sum": "# retained" },
     });
   });

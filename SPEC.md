@@ -2,18 +2,18 @@
 
 ## Document status
 
-- Status: approved proof-of-concept scope
+- Status: approved working-MVP scope
 - Target: OpenAI hackathon demo
 - Primary device: iPhone using Safari
 - Primary language: Python
-- Distribution: public, MIT-licensed proof of concept
+- Distribution: public, MIT-licensed working MVP
 - Product boundary: a mobile coding playground, not a production IDE
 
 ## Product statement
 
 HFC lets someone solve a small Python programming challenge on an iPhone without typing on the touchscreen keyboard. The user speaks literal code, precise editing commands, or a targeted natural-language change; HFC turns the utterance into an editor action, shows AI-generated changes before applying them, and runs the solution against local tests.
 
-The proof of concept should demonstrate a new input model for code. It should not attempt to reproduce VS Code, LeetCode, or Codex on a phone.
+The product demonstrates a new input model for code. It intentionally focuses on a complete mobile challenge workflow rather than attempting to reproduce VS Code, LeetCode, or Codex on a phone.
 
 ## Demo promise
 
@@ -161,7 +161,7 @@ beyond-end ranges are invalid and must leave both source and selection unchanged
 "New line" replaces the current selection with a line separator followed by the leading
 whitespace of the line containing the selection head. It does not add an extra indentation
 level; the explicit Indent action does that. Python indentation is four spaces for all
-deterministic actions and literal-dictation fixtures in this proof of concept.
+deterministic actions and literal-dictation fixtures in this MVP.
 
 ### OpenAI integration
 
@@ -181,7 +181,7 @@ deterministic actions and literal-dictation fixtures in this proof of concept.
 - Capture standard output, exceptions, and per-test pass/fail results.
 - Terminate and recreate the worker when execution exceeds three seconds.
 - Running code must not block microphone, editor, or other UI interactions.
-- The test runner is a demo sandbox, not a security boundary for untrusted third-party code.
+- The test runner is a browser execution environment, not a security boundary for untrusted third-party code.
 
 ### Persistence
 
@@ -414,7 +414,7 @@ Before the demo, the primary flow must also be verified on the physical iPhone i
 
 ## Success criteria
 
-The proof of concept is successful when:
+The MVP is successful when:
 
 - the rehearsed demo flow completes on the physical iPhone without typing;
 - all required deterministic commands produce the expected CodeMirror transactions;

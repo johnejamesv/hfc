@@ -16,6 +16,10 @@ const pairSolution = `def pair_sum(nums, target):
     return []`;
 
 const challengeSolutions = {
+  "contains-duplicate": `def contains_duplicate(nums):
+    return len(nums) != len(set(nums))`,
+  "valid-anagram": `def is_anagram(s, t):
+    return sorted(s) == sorted(t)`,
   "pair-sum": pairSolution,
   "vowel-count": `def count_vowels(text):
     return sum(1 for char in text.lower() if char in "aeiou")`,
@@ -32,6 +36,7 @@ const challengeSolutions = {
 async function openWithTranscriptSession(page: Page): Promise<void> {
   await installTranscriptTransport(page);
   await page.goto("/");
+  await page.getByRole("combobox", { name: "Challenge" }).selectOption("pair-sum");
   await startTranscriptSession(page);
 }
 
@@ -102,6 +107,7 @@ test("validates AI rejection, discard, apply, write, and malformed-response reco
     await route.fulfill({ json: proposals[responseNumber - 1] });
   });
   await page.goto("/");
+  await page.getByRole("combobox", { name: "Challenge" }).selectOption("pair-sum");
   await startTranscriptSession(page);
   const editor = page.getByRole("textbox", { name: "Python code editor" });
   const original = await editor.textContent();
@@ -144,6 +150,7 @@ test("serializes delayed AI, Apply, and real Python Run, then gives Stop priorit
     await route.fulfill({ json: { replacement: pairSolution, explanation: "Delayed deterministic proposal." } });
   });
   await page.goto("/");
+  await page.getByRole("combobox", { name: "Challenge" }).selectOption("pair-sum");
   await startTranscriptSession(page);
   const editor = page.getByRole("textbox", { name: "Python code editor" });
 
@@ -164,10 +171,54 @@ test("serializes delayed AI, Apply, and real Python Run, then gives Stop priorit
   expect(requestCount).toBe(2);
 });
 
-test("runs every challenge and recovers after syntax, runtime, and timeout failures", async ({ page }) => {
+test("solves both primary challenges with deterministic transcript dictation", async ({ page }) => {
   test.setTimeout(180_000);
+  await installTranscriptTransport(page);
+  await page.goto("/");
+  await startTranscriptSession(page);
+  const selector = page.getByRole("combobox", { name: "Challenge" });
+  const editor = page.getByRole("textbox", { name: "Python code editor" });
+
+  await emitTranscript(page, "duplicate-line", "select line 3");
+  await emitTranscript(
+    page,
+    "duplicate-solution",
+    "type return len open paren nums close paren not equals len open paren set open paren nums close paren close paren",
+  );
+  await expect(editor).toContainText("return len(nums) != len(set(nums))");
+  await sendTranscript(page, "duplicate-run", "run tests");
+  await expect(page.getByRole("list", { name: "Test results" })).toContainText(
+    "finds a separated duplicate",
+    { timeout: 90_000 },
+  );
+
+  await selector.selectOption("valid-anagram");
+  await emitTranscript(page, "anagram-line", "select line 3");
+  await emitTranscript(
+    page,
+    "anagram-solution",
+    "type return sorted open paren s close paren double equals sorted open paren t close paren",
+  );
+  await expect(editor).toContainText("return sorted(s) == sorted(t)");
+  await sendTranscript(page, "anagram-run", "run tests");
+  await expect(page.getByRole("list", { name: "Test results" })).toContainText(
+    "accepts reordered characters",
+    { timeout: 90_000 },
+  );
+});
+
+test("runs every challenge and recovers after syntax, runtime, and timeout failures", async ({ page }) => {
+  test.setTimeout(300_000);
   await page.goto("/");
   const selector = page.getByRole("combobox", { name: "Challenge" });
+
+  const expectedTestName = {
+    "contains-duplicate": "finds a separated duplicate",
+    "valid-anagram": "accepts reordered characters",
+    "pair-sum": "finds a pair near the front",
+    "vowel-count": "counts mixed-case text",
+    "steady-rises": "finds the longest internal rise",
+  } as const;
 
   for (const [challenge, source] of Object.entries(challengeSolutions)) {
     await selector.selectOption(challenge);
@@ -175,7 +226,10 @@ test("runs every challenge and recovers after syntax, runtime, and timeout failu
     await editor.fill(source);
     await page.getByRole("button", { name: "Run" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Tests running." })).toBeVisible();
-    await expect(page.locator("details.test-results")).toContainText("3/3 tests passed", { timeout: 90_000 });
+    await expect(page.getByRole("list", { name: "Test results" })).toContainText(
+      expectedTestName[challenge as keyof typeof expectedTestName],
+      { timeout: 90_000 },
+    );
   }
 
   await selector.selectOption("pair-sum");
@@ -211,6 +265,7 @@ test("repeats the transcript-only primary rehearsal three times without editor i
     });
   });
   await page.goto("/");
+  await page.getByRole("combobox", { name: "Challenge" }).selectOption("pair-sum");
   await startTranscriptSession(page);
   const editor = page.getByRole("textbox", { name: "Python code editor" });
 

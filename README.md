@@ -1,7 +1,7 @@
 # Hands-Free Code
 
-Hands-Free Code (HFC) is a mobile-first Python practice playground for a small,
-rehearsed voice-coding demo. Speak constrained editor commands, literal Python
+Hands-Free Code (HFC) is a working mobile-first Python practice playground for a
+focused voice-coding workflow. Speak constrained editor commands, literal Python
 dictation, or a targeted AI edit request; review every AI proposal before it changes
 `solution.py`; then run the challenge's bundled tests in the browser.
 
@@ -9,11 +9,11 @@ dictation, or a targeted AI edit request; review every AI proposal before it cha
 
 ## Product boundary
 
-HFC intentionally stays narrow: three original Python challenges, one in-memory virtual
+HFC intentionally stays narrow: five bundled Python challenges, one in-memory virtual
 file per challenge, deterministic tests, and no accounts, cloud sync, terminal, arbitrary
-file access, or server-side code execution. The Pyodide runner is a demo sandbox, not a
-security boundary for hostile code. Bundled challenge prompts and test cases are original;
-they are not copied from LeetCode or another challenge service.
+file access, or server-side code execution. The Pyodide runner is a browser execution environment, not a
+security boundary for hostile code. Challenge concepts include common interview exercises,
+but the bundled wording and test cases are original rather than copied from another service.
 
 ## Architecture
 
@@ -75,10 +75,14 @@ key unless `HFC_EDIT_ADAPTER=mock` is set.
 
 ## Demo script
 
-1. Choose **Find a matching pair** and tap the microphone.
-2. Say “select lines 1 through 3,” then “change this to use a lookup table.”
-3. Say “apply,” then “run.” The proposal is visibly reviewed before Apply changes code.
-4. Observe the named bundled tests pass, then say “stop listening.”
+1. Start on **Contains a duplicate** and tap the microphone.
+2. Say “select line 3.”
+3. Say “type return len open paren nums close paren not equals len open paren set open paren nums close paren close paren.”
+4. Say “run tests,” observe the three named cases pass, then say “stop listening.”
+
+The second primary challenge, **Check an anagram**, is also solvable deterministically: select
+line 3, then say “type return sorted open paren s close paren double equals sorted open paren t
+close paren.”
 
 Literal dictation starts with “type”; for example, “type return nums open bracket zero close
 bracket.” Supported editing commands and the full vocabulary are visible in the app.
@@ -95,9 +99,9 @@ npm run build
 npm run test:e2e
 ```
 
-The browser suite uses a 390×844 mobile-WebKit profile. It includes a mocked WebRTC/AI
-rehearsal that drives voice selection, AI review, Apply, Run, and Stop through visible UI,
-while the Python worker remains real.
+The browser suite uses a 390×844 mobile-WebKit profile plus desktop Chromium. It includes a
+mocked WebRTC/AI rehearsal and deterministic transcript-only solutions for both primary
+challenges, while the Python worker remains real.
 
 ## Dependencies and credits
 

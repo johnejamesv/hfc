@@ -4,33 +4,33 @@ import { emitTranscript, installTranscriptTransport, startTranscriptSession } fr
 test("shows a usable playground without horizontal page scrolling", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Find a matching pair" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Contains a duplicate" })).toBeVisible();
   const selector = page.getByRole("combobox", { name: "Challenge" });
   const editor = page.getByRole("textbox", { name: "Python code editor" });
-  await expect(selector).toHaveValue("pair-sum");
+  await expect(selector).toHaveValue("contains-duplicate");
   await expect(editor).toBeVisible();
-  await expect(page.getByText("def pair_sum(nums, target):")).toBeVisible();
+  await expect(page.getByText("def contains_duplicate(nums):")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start listening" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Editor controls" })).toBeVisible();
 
-  await editor.fill("custom_pair_solution");
-  await selector.selectOption("vowel-count");
-  await expect(page.getByRole("heading", { name: "Count the vowels" })).toBeVisible();
-  await page.getByRole("textbox", { name: "Python code editor" }).fill("custom_vowel_solution");
-  await selector.selectOption("pair-sum");
+  await editor.fill("custom_duplicate_solution");
+  await selector.selectOption("valid-anagram");
+  await expect(page.getByRole("heading", { name: "Check an anagram" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Python code editor" }).fill("custom_anagram_solution");
+  await selector.selectOption("contains-duplicate");
   await expect(page.getByRole("textbox", { name: "Python code editor" })).toHaveText(
-    "custom_pair_solution",
+    "custom_duplicate_solution",
   );
 
   page.once("dialog", async (dialog) => dialog.dismiss());
   await page.getByRole("button", { name: "Reset" }).click();
   await expect(page.getByRole("textbox", { name: "Python code editor" })).toHaveText(
-    "custom_pair_solution",
+    "custom_duplicate_solution",
   );
 
   page.once("dialog", async (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Reset" }).click();
-  await expect(page.getByText("def pair_sum(nums, target):")).toBeVisible();
+  await expect(page.getByText("def contains_duplicate(nums):")).toBeVisible();
 
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -43,6 +43,7 @@ test("shows a usable playground without horizontal page scrolling", async ({ pag
 test("runs the bundled Python cases without blocking the editor", async ({ page }) => {
   test.setTimeout(90_000);
   await page.goto("/");
+  await page.getByRole("combobox", { name: "Challenge" }).selectOption("pair-sum");
   const editor = page.getByRole("textbox", { name: "Python code editor" });
   await editor.fill(`def pair_sum(nums, target):
     seen = {}

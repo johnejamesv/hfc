@@ -71,7 +71,7 @@ all pass. The WebKit browser binary was installed before the final e2e run.
 ### T-003 — Build the challenge and editor shell
 
 - [x] Define a typed challenge model with starter code and deterministic tests.
-- [x] Add three original Python challenges, including one designated demo challenge.
+- [x] Add five bundled Python challenges with original wording and tests, including one designated demo challenge.
 - [x] Render the challenge prompt, examples, and challenge selector.
 - [x] Integrate a controlled CodeMirror 6 editor with Python highlighting and line numbers.
 - [x] Add Reset with confirmation.
@@ -87,14 +87,14 @@ Acceptance:
 
 Prerequisites: T-001.
 
-Evidence: `app/challenges.ts` defines three typed, original challenges with structured
-deterministic cases and designates Find a matching pair as the demo. The client playground
+Evidence: `app/challenges.ts` defines five typed challenges with original wording and structured
+deterministic cases and designates Contains a duplicate as the demo. The client playground
 retains an independent in-memory source for every challenge and renders each prompt and
 example. CodeMirror 6 is installed through the root lockfile and provides a controlled,
 keyboard-editable Python document with syntax highlighting, line numbers, four-space
 indentation, and editor history. Reset cancellation leaves the current editor instance and
 source untouched; confirmation restores starter code and recreates the editor history.
-Component coverage exercises all three challenge switches, independent source retention,
+Component coverage exercises all five challenge switches, independent source retention,
 and both reset outcomes. After a clean `npm ci`, production build, typecheck, lint, all 20
 unit/component tests, and the 390×844 mobile-WebKit e2e test pass. The WebKit test types into
 the real CodeMirror editor, verifies challenge retention and both reset paths, and confirms
@@ -338,13 +338,14 @@ Acceptance:
 
 Prerequisites: T-009 and T-010.
 
-Evidence: Automated verification is complete. On 2026-07-20, the retained browser matrix injected
+Evidence: Automated verification is complete. On 2026-07-21, the retained browser matrix injected
 completed transcript turns after a mocked WebRTC boundary while preserving the real router, queue,
 editor dispatcher, proposal client/UI, and Pyodide worker. It covered deterministic editing,
 deduplication, persistence, AI rejection/Discard/Apply/malformed output, queue ordering and Stop
-priority, all three challenge suites, syntax/runtime/timeout recovery, and three consecutive
+priority, deterministic voice solutions for the two primary challenges, all five challenge suites,
+syntax/runtime/timeout recovery, and three consecutive
 transcript-only primary rehearsals. `npm run typecheck`, `npm run lint`, `npm test` (103 tests),
-`npm run build`, and all 16 Playwright cases passed across 390×844 mobile WebKit and desktop
+`npm run build`, and all 18 Playwright cases passed across 390×844 mobile WebKit and desktop
 Chromium. Microphone capture/transcription was outside this run; physical-iPhone repetitions and
 final device/model details remain required manual verification and are intentionally unchecked.
 

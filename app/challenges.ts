@@ -1,4 +1,9 @@
-export type ChallengeId = "pair-sum" | "vowel-count" | "steady-rises";
+export type ChallengeId =
+  | "contains-duplicate"
+  | "valid-anagram"
+  | "pair-sum"
+  | "vowel-count"
+  | "steady-rises";
 
 export type ChallengeValue =
   | null
@@ -33,6 +38,48 @@ export interface Challenge {
 
 export const challenges: readonly Challenge[] = [
   {
+    id: "contains-duplicate",
+    title: "Contains a duplicate",
+    summary: "Decide whether any integer occurs more than once.",
+    prompt:
+      "Return true when at least one value appears more than once in the list. Return false when every value is unique.",
+    functionName: "contains_duplicate",
+    starterCode: `def contains_duplicate(nums):
+    # Check whether any value repeats.
+    return False`,
+    examples: [
+      { input: "nums = [6, 1, 4, 6]", output: "True", note: "The value 6 appears twice." },
+      { input: "nums = [3, 8, -2]", output: "False" },
+    ],
+    tests: [
+      { name: "finds a separated duplicate", args: [[6, 1, 4, 6]], expected: true },
+      { name: "accepts all unique values", args: [[3, 8, -2]], expected: false },
+      { name: "finds adjacent duplicates", args: [[9, 9]], expected: true },
+    ],
+    isDemo: true,
+  },
+  {
+    id: "valid-anagram",
+    title: "Check an anagram",
+    summary: "Compare two strings without caring about character order.",
+    prompt:
+      "Return true when both strings contain exactly the same characters with the same frequencies, regardless of order.",
+    functionName: "is_anagram",
+    starterCode: `def is_anagram(s, t):
+    # Compare the character frequencies.
+    return False`,
+    examples: [
+      { input: 's = "listen", t = "silent"', output: "True" },
+      { input: 's = "paper", t = "pepper"', output: "False" },
+    ],
+    tests: [
+      { name: "accepts reordered characters", args: ["listen", "silent"], expected: true },
+      { name: "rejects different frequencies", args: ["paper", "pepper"], expected: false },
+      { name: "accepts two empty strings", args: ["", ""], expected: true },
+    ],
+    isDemo: false,
+  },
+  {
     id: "pair-sum",
     title: "Find a matching pair",
     summary: "Return the two positions whose values reach a target sum.",
@@ -58,7 +105,7 @@ export const challenges: readonly Challenge[] = [
       { name: "uses two different positions", args: [[3, 2, 4], 6], expected: [1, 2] },
       { name: "supports negative values", args: [[-5, 8, 2, 9], 3], expected: [0, 1] },
     ],
-    isDemo: true,
+    isDemo: false,
   },
   {
     id: "vowel-count",

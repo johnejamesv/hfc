@@ -304,6 +304,7 @@ export function Playground({ voiceMode }: { readonly voiceMode: VoiceMode }) {
       ) : null}
 
       <PythonTestRunner
+        key={selectedId}
         challenge={challenge}
         source={editorState.source}
         runRequests={editorState.runRequests}
