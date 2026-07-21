@@ -60,6 +60,8 @@ Set these in `.env.local`; do not use a `NEXT_PUBLIC_` prefix for secrets.
 
 | Variable | Purpose |
 | --- | --- |
+| `HFC_AUTH_USERNAME` | Production HTTP Basic Auth username. |
+| `HFC_AUTH_PASSWORD` | Production HTTP Basic Auth password. |
 | `OPENAI_API_KEY` | Server-only OpenAI key for Realtime credentials and targeted edits. |
 | `OPENAI_REALTIME_MODEL` | Optional Realtime model; defaults to `gpt-realtime`. |
 | `OPENAI_REALTIME_TRANSCRIPTION_MODEL` | Optional Realtime transcription model. |
@@ -72,6 +74,10 @@ Set these in `.env.local`; do not use a `NEXT_PUBLIC_` prefix for secrets.
 
 The OpenRouter fallback is for transcription only. Targeted edits still require an OpenAI
 key unless `HFC_EDIT_ADAPTER=mock` is set.
+
+Production builds fail closed with a `503` response when either authentication variable is
+missing. Keep both values server-side and use a long, randomly generated password. Local
+development remains accessible without credentials.
 
 ## Demo script
 
